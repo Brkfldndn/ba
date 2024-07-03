@@ -1,5 +1,7 @@
-import StudyWrapper from "@/components/Studywrapper";
-import { fetchStudyInstruction } from "../actions";
+import StudyWrapper from "@/components/StudyWrapper";
+import { fetchQuestions } from "../actions";
+import Navbar from "@/components/Navbar";
+import ContentPages from "@/components/ContentPages";
 
 const Home = async ({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) => {
   const studyParam = searchParams ? searchParams.study : undefined;
@@ -16,14 +18,16 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
   let data = [];
 
   try {
-    data = await fetchStudyInstruction(study);
-    console.log('Data3:', data);
+    data = await fetchQuestions(study);
+    console.log(data);
   } catch (error) {
     console.error('Error fetching data:', error);
   }
 
   return (
     <div className="p-4" style={{ height: 'calc(100vh - 189px)' }}>
+      {/* <Navbar data={data}  />
+      <ContentPages data={data}  /> */}
       <StudyWrapper data={data} />
     </div>
   );

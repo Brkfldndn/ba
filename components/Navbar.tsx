@@ -19,7 +19,23 @@ import {
 } from "@/components/ui/alert-dialog"
 
 
-const Navbar = ({ data }) => {
+interface StudyInstruction {
+  study_id: number;
+  created_at: string;
+  titel: string;
+  description: string;
+  instruction?: string; // Optional field for instruction if needed
+}
+
+interface NavbarProps {
+  data: StudyInstruction[];
+  handleSubmit: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ data, handleSubmit }) => {
+  console.log('Navbar component data:', data);
+  
+  console.log(data.length)
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -41,11 +57,11 @@ const Navbar = ({ data }) => {
     }
   };
 
-  // Handle submission on the last task
-  const handleSubmit = () => {
-    // Logic for submission can be added here
-    console.log("Submitted");
-  };
+  // // Handle submission on the last task
+  // const handleSubmit = () => {
+  //   // Logic for submission can be added here
+  //   console.log("Submitted");
+  // };
 
   return (
     <div className="mb-3 relative flex flex-row justify-between items-center">
@@ -91,9 +107,7 @@ const Navbar = ({ data }) => {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction>
-                <Link href={"/success"}>
-                  Submit
-                </Link>
+                <Link href={"/success"}></Link>
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -15,18 +15,19 @@ const GPT = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [debouncedInput, setDebouncedInput] = useState('');
 
-
-
-
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedInput(input);
-        }, 800);
+        }, 1000);
 
         return () => {
             clearTimeout(handler);
         };
     }, [input]);
+    
+    useEffect(() => {
+        console.log('Current messages:', messages);
+      }, [messages]);
 
     useEffect(() => {
         if (debouncedInput) {
