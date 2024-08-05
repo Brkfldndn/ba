@@ -1,5 +1,7 @@
 import { fetchStudyInstruction } from "./actions";
 import Link from "next/link";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import {
   Carousel,
@@ -78,10 +80,12 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
             studie.description_control}
             </CarouselItem>
             <CarouselItem className="border-2 h-full rounded-3xl">
-            {group === 'treatment' ? 
-            studie.description_treatment 
-            : 
-            studie.description_control}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {group === 'treatment' ? 
+                studie.description_treatment 
+                : 
+                studie.description_control}
+              </ReactMarkdown>
             </CarouselItem>
             <CarouselItem className="border-2 h-full w-1/2 rounded-3xl flex flex-col items-center justify-center">
               <Link 
