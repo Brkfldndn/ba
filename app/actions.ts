@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { createClient } from '@supabase/supabase-js'
 
 import { createStreamableValue } from 'ai/rsc';
-import { CoreMessage, streamText } from 'ai';
+import { CoreMessage, generateObject, streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { streamObject } from 'ai';
 import { generateText } from 'ai';
@@ -22,59 +22,56 @@ interface SaveAnswersResult {
   data?: any;
 }
 
-export async function saveAnswers(answers: Answers): Promise<SaveAnswersResult> {
+
+export async function saveAnswers(formattedAnswers: any[]): Promise<SaveAnswersResult> {
   try {
     console.log("Attempting to save answers...");
 
-    // Example data for prolific_id, grade, passed, start_time, end_time
-    const prolific_id = "example_prolific_id";
-    const grade = null;
-    const passed = null;
-    const start_time = new Date().toISOString();
-    const end_time = new Date().toISOString();
-
-    // Validate that all question_ids exist in the questions table
-    const questionIds = Object.keys(answers).map(Number);
-    const { data: existingQuestions, error: questionError } = await supabase
-      .from('questions')
-      .select('question_id')
-      .in('question_id', questionIds);
-
-    if (questionError) {
-      console.error('Error fetching questions:', questionError);
-      return { success: false, error: questionError.message };
-    }
-
-    const existingQuestionIds = existingQuestions.map((q: any) => q.question_id);
-
-    // Filter out invalid question_ids
-    const validAnswers = Object.entries(answers).filter(([taskIndex]) => {
-      return existingQuestionIds.includes(Number(taskIndex));
-    });
-
-    if (validAnswers.length === 0) {
-      return { success: false, error: 'No valid question IDs to insert' };
-    }
-
-    // Insert valid answers into the results table
+    // Insert the answers into the results table
     const { data, error } = await supabase
       .from('results')
-      .insert(validAnswers.map(([taskIndex, answer]) => ({
-        question_id: Number(taskIndex),
-        prolific_id,
-        response_text: answer,
-        response_data: JSON.stringify({ taskIndex, answer }),
-        grade,
-        passed,
-        start_time,
-        end_time,
-      })));
+      .insert(formattedAnswers);
 
     if (error) {
       console.error('Error saving answers:', error);
       return { success: false, error: error.message };
     }
 
+    return { success: true, data };
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+
+export interface DummyData {
+  created_at: string;
+  question_id: number;
+  prolific_id: string;
+  response_text: string;
+  response_data: string;
+  grade: number;
+  passed: boolean;
+  start_time: string;
+  end_time: string;
+}
+
+export async function saveAnswerstest(dummyDataArray: DummyData[]) {
+  try {
+    console.log("Attempting to save answers...");
+
+    // Insert the dummy data into the results table
+    const { data, error } = await supabase
+      .from('results')
+      .insert(dummyDataArray);
+
+    if (error) {
+      console.error('Error saving answers:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('Data saved:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Unexpected error:', error);
@@ -111,8 +108,145 @@ export async function generateSug(input: string) {
     stream.done();
   })();
 
+  
   return { object: stream.value };
 }
+
+export async function generateRating(input: string) {
+  'use server';
+
+  const { object: ratingResult } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `Mach 4 Dinge: 1. bewerte den prompt auf einer Skala von 0-10, 
+             2. Überlege dir was bei dem prompt fehlt, um noch besser abzuschneiden. 
+             Mögliche Kategorien sind "length" im Sinne von der prompt ist zu kurz, "context" im Sinne von der Kontext ist nicht klar, 
+             "instruction" im Sinne von die Aufgabenstellung ist nicht klar. 
+             3. Überlege dir einen Verbesserungsvorschlag für die entsprechende Kategorie in einem kurzen Satz, 
+             dies kann auch eine Frage bzw. Gegenfrage sein. 
+             Dein Output hat JSON-Format wie z.B. {
+              "grade": 5,
+              "categories": [
+                { "context": "Der Kontext ist nicht klar" },
+                { "instruction": "Sollen die Antworten in Fließtext oder in Stichpunkten erfolgen?" }
+              ]
+            } 
+             Maximale Kategorien sollen 3 sein, falls diese nicht unbedingt notwendig sind, bitte weglassen
+            Falls der promt schelcht formuliert ist und es sich logisch erschließt einen besseren promt zu bauen überlege dir einen neuen promt mit der gleichen Semantik aber mit anderen enstprechenden Formulierung; aber nur wenn der promt schon lang genueg ist und auch nicht falls es nicht notwendig ist , 
+            Das Json Format ist dementsprechend zu erweitern, hier ein beispiel:
+            {
+              "grade": 5,
+              "categories": [
+                { "context": "Kontext nicht klar" },
+                { "instruction": "Fließtext oder Stichpunkte ?" }
+              ],
+              "promtReplacement": "Wie viel Seiten hat ein Würfel ?"
+            }
+            Wichtig ist für alle categories sowie promtreplacements dass sie so kurz und prägnant sind wie möglich ohne "." bzw auch wenn nötig nicht vollständig grammatikalisch richtig
+             `,
+    prompt: input,
+    schema: z.object({
+      grade: z.number(),
+      categories: z.array(
+        z.object({
+          context: z.string().optional(),
+          instruction: z.string().optional(),
+          length: z.string().optional(),
+        })
+      ).optional(),
+      promtReplacement: z.string().optional()
+    }),
+  });
+
+  console.log('Rating Result:', ratingResult);
+  return ratingResult;
+}
+
+
+
+
+
+export async function generateGrade(input: string) {
+  'use server';
+
+  const { object: grade } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `rate the prompt from 0-10. The rating should correspond with how well the prompt is engineered. If the promt is likely going to return the intenden answer, the grade should be high for example. Only output the grade as a number`,
+    prompt: input,
+    schema: z.object({
+      grade: z.number()
+    })
+  });
+
+  console.log('Grade:', grade);
+  return grade;
+}
+
+
+export async function generatePromtReplacement(input: string) {
+  'use server';
+
+  const { object: promtReplacement } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `If the promt is engineered/written in a bad way and the promt could be improved keeping the same semantic, then generate such promt. so only output the improved promt.`,
+    prompt: input,
+    schema: z.object({
+      promtReplacement: z.string().optional()
+    })
+  });
+
+  console.log('newPromt:', promtReplacement);
+  return promtReplacement;
+}
+
+export async function generateSuggestions(input: string) {
+  'use server';
+
+  const { object: suggestions } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `If the promt is missing context say what context needs to be there.`,
+    prompt: input,
+    schema: z.array(z.string())
+  });
+
+  console.log('newSuggestions:', suggestions);
+  return suggestions;
+}
+
+
+export async function generateDirection(input: string) {
+  'use server';
+
+  const { object: suggestions } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `If and only if the promt is missing context in terms of the direction where the pomt should, then output something along the lines of "more context" etc. or as a question that nudges the promter to the missing direction of the promt  `,
+    prompt: input,
+    schema: z.object({
+      promtDirection: z.string().optional()
+    })
+  });
+
+  console.log('newSuggestions:', suggestions);
+  return suggestions;
+}
+
+
+export async function generateExample(input: string) {
+  'use server';
+
+  const { object: suggestions } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `If and only if the promt is missing context in terms of the direction where the pomt should, then output something along the lines of "more context" etc. or as a question that nudges the promter to the missing direction of the promt  `,
+    prompt: input,
+    schema: z.object({
+      promtExample: z.string().optional()
+    })
+  });
+
+  console.log('newSuggestions:', suggestions);
+  return suggestions;
+}
+
+
 
 
 
@@ -196,7 +330,7 @@ export const fetchQuestions = async (study: number) => {
   return data;
 };
 
-export const fetchStudyInstruction = async (study: number) => {
+export const fetchStudyInstruction = async (study: string) => {
   console.log('Received study parameter:', study);
 
   if (study === undefined) {
@@ -207,7 +341,9 @@ export const fetchStudyInstruction = async (study: number) => {
   const { data, error } = await supabase
     .from('studien')
     .select('*')
-    .eq('study_id', study);
+    .eq('study_id', study)
+    .single();
+    
 
   if (error) {
     console.error('Error fetching data:', error);

@@ -16,8 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
+} from "@/components/ui/alert-dialog";
 
 interface StudyInstruction {
   study_id: number;
@@ -29,16 +28,24 @@ interface StudyInstruction {
 
 interface NavbarProps {
   data: StudyInstruction[];
+  formData: { [key: number]: string };
   handleSubmit: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ data, handleSubmit }) => {
-  console.log('Navbar component data:', data);
+const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
+  console.log("Navbar component data:", data);
+  console.log(data.length);
+  console.log("FormData:", formData); // Added logging
   
-  console.log(data.length)
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
+  // Extract existing URL parameters
+  const PROLIFIC_PID = searchParams.get("PROLIFIC_PID");
+  const STUDY_ID = searchParams.get("STUDY_ID");
+  const SESSION_ID = searchParams.get("SESSION_ID");
+  const study = searchParams.get("study");
+
   // Get and parse taskIndex from URL parameters
   const taskIndexParam = searchParams.get("index");
   const taskIndex = taskIndexParam ? parseInt(taskIndexParam, 10) : 0;
@@ -46,27 +53,32 @@ const Navbar: React.FC<NavbarProps> = ({ data, handleSubmit }) => {
   // Handle navigation to the next task
   const handleNextTask = () => {
     if (taskIndex < data.length - 1) {
-      router.push(`?study=${data[0].study_id}&index=${taskIndex + 1}`);
+      router.push(
+        `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex + 1}`
+      );
     }
   };
 
   // Handle navigation to the previous task
   const handlePreviousTask = () => {
     if (taskIndex > 0) {
-      router.push(`?study=${data[0].study_id}&index=${taskIndex - 1}`);
+      router.push(
+        `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex - 1}`
+      );
     }
   };
 
-  // // Handle submission on the last task
-  // const handleSubmit = () => {
-  //   // Logic for submission can be added here
-  //   console.log("Submitted");
-  // };
+  // Handle navigation to a specific task
+  const handleTaskClick = (index: number) => {
+    router.push(
+      `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${index}`
+    );
+  };
 
   return (
     <div className="mb-3 relative flex flex-row justify-between items-center">
-      <Button 
-        className="right-3 top-3 p-1 px-4 flex flex-row items-center justify-center gap-4" 
+      <Button
+        className="right-3 top-3 p-1 px-4 flex flex-row items-center justify-center gap-4"
         onClick={handlePreviousTask}
         disabled={taskIndex <= 0}
       >
@@ -77,43 +89,59 @@ const Navbar: React.FC<NavbarProps> = ({ data, handleSubmit }) => {
         <div className="font-semibold text-xl">{`Task ${taskIndex + 1}`}</div>
         <Stopwatch />
       </div>
+      <div className="flex flex-row items-center gap-2">
+        {data.map((_, index) => {
+          const isCurrentTask = index === taskIndex;
+          const hasAnswer = formData && formData[index] !== undefined && formData[index] !== "";
+          console.log(`Index ${index}: ${hasAnswer ? "Has answer" : "No answer"}`); // Added logging
+          return (
+            <div
+              key={index}
+              className={`w-8 h-10 rounded-md flex flex-col items-center justify-center cursor-pointer ${
+                isCurrentTask
+                  ? "border-2 border-black"
+                  : hasAnswer
+                  ? "bg-gray-300"
+                  : "bg-white"
+              }`}
+              onClick={() => handleTaskClick(index)}
+            >
+              {index + 1}
+            </div>
+          );
+        })}
+      </div>
       {taskIndex < data.length - 1 ? (
-        <Button 
-          className="left-3 top-3 p-1 px-4 flex flex-row items-center gap-3" 
+        <Button
+          className="left-3 top-3 p-1 px-4 flex flex-row items-center gap-3"
           onClick={handleNextTask}
         >
-          <div>{`Task ${taskIndex + 1} of ${data.length}`}</div>
+          <div>{`Next Task`}</div>
           <FaArrowRight size={15} />
         </Button>
       ) : (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            {/* <Link href={"/success"}> */}
-                <Button 
-                  className="left-3 top-3 p-1 px-4 flex flex-row items-center gap-3 border-2 border-white border-opacity-100 bg-[#21d9c3] text-white hover:bg-white hover:border-[#21d9c3] hover:text-[#21d9c3]" 
-                  onClick={handleSubmit}
-                >
-                  <div>Submit</div>
-                </Button>
-              {/* </Link> */}
+            <Button className="left-3 top-3 p-1 px-4 flex flex-row items-center gap-3 border-2 border-white border-opacity-100 bg-[#21d9c3] text-white hover:bg-white hover:border-[#21d9c3] hover:text-[#21d9c3]">
+              <div>Submit</div>
+            </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                By submitting you....
+                By submitting you cannot change answers. Make sure to answer
+                all the questions.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction>
-                <Link href={"/success"}></Link>
+              <AlertDialogAction onClick={handleSubmit}>
+                Submit
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        
-        
       )}
     </div>
   );

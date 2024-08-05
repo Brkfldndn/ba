@@ -3,8 +3,9 @@ import { fetchQuestions } from "../actions";
 import Navbar from "@/components/Navbar";
 import ContentPages from "@/components/ContentPages";
 
-const Home = async ({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) => {
+const Home = async ({ searchParams }: { searchParams: { [key: string]: string  | undefined } }) => {
   const studyParam = searchParams ? searchParams.study : undefined;
+  const group = searchParams ? searchParams.group : undefined;
   console.log('Study parameter from URL:', studyParam);
 
   const study: number = parseInt(studyParam as string, 10);
@@ -26,9 +27,8 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
 
   return (
     <div className="p-4" style={{ height: 'calc(100vh - 189px)' }}>
-      {/* <Navbar data={data}  />
-      <ContentPages data={data}  /> */}
-      <StudyWrapper data={data} />
+
+      <StudyWrapper data={data} questions={data} group={group}/>
     </div>
   );
 }
