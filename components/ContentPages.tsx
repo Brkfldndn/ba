@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useSearchParams } from "next/navigation";
 import { Textarea } from "./ui/textarea";
@@ -27,17 +27,15 @@ interface ContentPagesProps {
 const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswerChange, group }) => {
   const searchParam = useSearchParams();
   const taskIndexParam = searchParam.get("index");
-  const taskIndex = taskIndexParam ? parseInt(taskIndexParam, 10) : 0;
+  const [taskIndex, setTaskIndex] = useState(taskIndexParam ? parseInt(taskIndexParam, 10) : 0); // Added useState for taskIndex
 
   const { toast } = useToast();
   const instructionRef = useRef<HTMLDivElement>(null);
 
-  // Ensure taskIndex is within bounds
-  if (isNaN(taskIndex) || taskIndex < 0 || taskIndex >= data.length) {
-    return <div>Invalid task index</div>;
-  }
-
-  console.log('Current Task Index:', taskIndex);
+  useEffect(() => {
+    const taskIndexParam = searchParam.get("index");
+    setTaskIndex(taskIndexParam ? parseInt(taskIndexParam, 10) : 0);
+  }, [searchParam]);
 
   useEffect(() => {
     const handleCopy = (e: ClipboardEvent) => {
@@ -57,6 +55,12 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
     };
   }, [toast]);
 
+  if (isNaN(taskIndex) || taskIndex < 0 || taskIndex >= data.length) {
+    return <div>Invalid task index</div>;
+  }
+
+  console.log('Current Task Index:', taskIndex);
+
   return (
     <ResizablePanelGroup direction="horizontal" className="w-full rounded-lg border">
       <ResizablePanel defaultSize={50} className="relative">
@@ -68,11 +72,11 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
       <ResizablePanel defaultSize={50}>
         <ResizablePanelGroup direction="vertical">
           <ResizablePanel defaultSize={75}>
-            <div className="flex flex-col h-full p-6" ref={instructionRef}>
+            <div className="flex flex-col h-full p-6">
               <div className="font-semibold w-full flex flex-row justify-between items-center">
                 <div>Aufgabenstellung</div>
               </div>
-              <div>
+              <div ref={instructionRef}>
                 {Array.isArray(data) && data.length > 0 && (
                   <div key={taskIndex}>{data[taskIndex]?.instruction || "No instruction provided."}</div>
                 )}
