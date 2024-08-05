@@ -7,7 +7,7 @@ import { GoSearch } from "react-icons/go";
 import { generateGrade, generatePromtReplacement, generateRating, generateSuggestions } from '../app/actions';
 
 interface GPT_ratingv1Props {
-    group: string;
+    group: string | undefined;
 }
 
 const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
@@ -83,19 +83,19 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         }
     }, [debouncedInput]);
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInput(value);
         setIsInputNotEmpty(value.trim().length > 0);
         autoResizeTextarea();
-
-        if (input.length === 0) {
+    
+        if (value.length === 0) {  // Use 'value' instead of 'input' to check the length
             setGrade("");
             setPromtReplacement("");
         }
     };
 
-    const handleKeyPress = (e) => {
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             setDebouncedInput(input);
@@ -116,20 +116,21 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         }
     };
 
-    const getGradeColor = (grade) => {
-        const startColor = [220, 53, 69]; // Red
-        const endColor = [40, 167, 69];   // Green
-
-        const interpolateColor = (start, end, factor) => {
+    const getGradeColor = (grade: number): string => {
+        const startColor: [number, number, number] = [220, 53, 69]; // Red
+        const endColor: [number, number, number] = [40, 167, 69];   // Green
+    
+        const interpolateColor = (start: number, end: number, factor: number): number => {
             return start + factor * (end - start);
         };
-
+    
         const color = startColor.map((start, index) => {
             return Math.round(interpolateColor(start, endColor[index], grade / 10)).toString(16).padStart(2, '0');
         }).join('');
-
+    
         return `#${color}`;
     };
+    
 
     return (
         <div className="flex flex-col w-full h-full relative">
