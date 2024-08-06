@@ -34,3 +34,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Create new Study
+
+To create tasks and studies use MDX/Markdown. On the instructions Page the syntax is extendend by $$$. By seperating your instruction set by these $$$ you seperate the resuting component in widgets. This might be useful to better explain the user certain features as well as keep the user from skipping the entire Instruction page.
