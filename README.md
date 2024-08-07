@@ -38,3 +38,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
 ## Create new Study
 
 To create tasks and studies use MDX/Markdown. On the instructions Page the syntax is extendend by $$$. By seperating your instruction set by these $$$ you seperate the resuting component in widgets. This might be useful to better explain the user certain features as well as keep the user from skipping the entire Instruction page.
+
+To insert images, upload them on supabase storage and copy the image url in the markdown entry accordingly.
+
+

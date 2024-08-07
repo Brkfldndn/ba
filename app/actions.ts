@@ -170,7 +170,7 @@ export async function generateGrade(input: string) {
 
   const { object: grade } = await generateObject({
     model: openai('gpt-4-turbo'),
-    system: `rate the prompt from 0-10. The rating should correspond with how well the prompt is engineered. If the promt is likely going to return the intenden answer, the grade should be high for example. Only output the grade as a number`,
+    system: `rate the prompt from 0-5. The rating should correspond with how well the prompt is engineered. If the promt is likely going to return the intenden answer, the grade should be high for example. Only output the grade as a number`,
     prompt: input,
     schema: z.object({
       grade: z.number()
@@ -203,9 +203,11 @@ export async function generateSuggestions(input: string) {
 
   const { object: suggestions } = await generateObject({
     model: openai('gpt-4-turbo'),
-    system: `If the promt is missing context say what context needs to be there.`,
+    system: `If the promt is missing context say what context needs to be, this can also be the sentence "give an example" .`,
     prompt: input,
-    schema: z.array(z.string())
+    schema: z.object({
+      suggestions: z.string().optional()
+    })
   });
 
   console.log('newSuggestions:', suggestions);

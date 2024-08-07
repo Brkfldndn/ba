@@ -9,6 +9,7 @@ import { useChat } from 'ai/react';
 import { CgDanger } from "react-icons/cg";
 import BounceLoader from "react-spinners/BounceLoader";
 import PropagateLoader from "react-spinners/PropagateLoader";
+import PuffLoader from "react-spinners/PuffLoader";
 
 
 interface GPT_ratingv1Props {
@@ -21,21 +22,22 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const [input, setInput] = useState('');
     const [isInputNotEmpty, setIsInputNotEmpty] = useState(false);
     const [debouncedInput, setDebouncedInput] = useState('');
+
     const [loadingPromt, setLoadingPromt] = useState(false);
     const [loadingPromtNewGrade, setLoadingPromtNewGrade] = useState(false);
     const [loadingGradeinput, setLoadingGradeinput] = useState(false);
-    // const [loadingNudeges, setLoadingPromt] = useState(false);
+    const [loadingSuggestion, setLloadingSuggestion] = useState(false);
     // const [loadingPromt, setLoadingPromt] = useState(false);
 
-    const [ratingResult, setRatingResult] = useState({
-        grade: 0,
-        categories: {},
-        promtReplacement: ""
-    });
+    // const [ratingResult, setRatingResult] = useState({
+    //     grade: 0,
+    //     categories: {},
+    //     promtReplacement: ""
+    // });
     const [grade, setGrade] = useState<string>("");
     const [gradeNewPromt, setGradeNewPromt] = useState<string>("");
     const [promtReplacement, setPromtReplacement] = useState<string | undefined>("");
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestion, setSuggestion] = useState<string | undefined>("");
     // evaluate whether unique suggestions is the better way do do that 
     // or call them Nudges
 
@@ -55,7 +57,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     // Generate grade
     useEffect(() => {
-        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 4) {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
                 setLoadingGradeinput(true)
                 try {
@@ -74,7 +76,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     // Generate prompt replacement
     useEffect(() => {
-        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 4) {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
                 setLoadingPromt(true); // Start loading
                 try {
@@ -101,7 +103,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     // Generate prompt replacement grade
     useEffect(() => {
-        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 4) {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
                 setLoadingPromtNewGrade(true); // Start loading
                 try {
@@ -127,12 +129,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     useEffect(() => {
         if (group === 'treatment' && debouncedInput) {
             (async () => {
+                setLloadingSuggestion(true)
                 try {
-                    const suggestionsResponse = await generateSuggestions(debouncedInput);
-                    setSuggestions(suggestionsResponse); // Set the extracted value
-                    console.log('newSuggestions:', suggestionsResponse);
+                    const suggestionsResponse = await generateSuggestions(debouncedInput || '');
+                    const suggestionsResponseValue = suggestionsResponse?.suggestions ?? '';
+                    setSuggestion(suggestionsResponseValue); // Set the extracted value
+                    console.log('newSuggestions:', suggestionsResponseValue);
                 } catch (error) {
                     console.error('Error generating suggestions:', error);
+                } finally {
+                    setLloadingSuggestion(false)
                 }
             })();
         }
@@ -157,12 +163,14 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInput(value);
+        // setGrade("");
         setIsInputNotEmpty(value.trim().length > 0);
         autoResizeTextarea();
     
         if (value.length === 0) {  // Use 'value' instead of 'input' to check the length
             setGrade("");
-            setPromtReplacement("");
+            setPromtReplacement("")
+            setSuggestion("");
         }
     };
 
@@ -191,19 +199,18 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     };
 
     const getGradeColor = (grade: number): string => {
-        const startColor: [number, number, number] = [220, 53, 69]; // Red
-        const endColor: [number, number, number] = [40, 167, 69];   // Green
-    
-        const interpolateColor = (start: number, end: number, factor: number): number => {
-            return start + factor * (end - start);
+        const gradeColors: { [key: number]: string } = {
+            5: "49ad07", 
+            4:  "a5ad07",
+            3:  "ad9a07",
+            2:  "ad2507",
+            1:  "820903",
+            0:  "000000"
         };
     
-        const color = startColor.map((start, index) => {
-            return Math.round(interpolateColor(start, endColor[index], grade / 10)).toString(16).padStart(2, '0');
-        }).join('');
-    
-        return `#${color}`;
+        return `#${gradeColors[grade] || "000000"}`; // Default to black if grade is not in the range
     };
+    
     
 
     return (
@@ -218,41 +225,17 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                         <div className="rounded text-left">
                             <div className="flex flex-row gap-5 items-start">
                                 <div className="flex flex-col gap-3 w-full">
+
                                     <div className='flex flex-row items-center gap-4'>
-                                        {/* <div
-                                            className="text-lg font-semibold border-2 rounded-full w-8 h-8 min-w-8 flex items-center justify-center min-w"
-                                            style={{
-                                                color: getGradeColor(ratingResult.grade),
-                                                borderColor: getGradeColor(ratingResult.grade)
-                                            }}
-                                        >
-                                            {grade}
-                                        </div> */}
-                                        
-                                        {/* {ratingResult.categories && ratingResult.categories.length > 0 && (
-                                            <div className='flex flex-row gap-3'>
-                                                {ratingResult.categories.map((category, index) => (
-                                                    <div key={index} className='border-2 rounded-lg border-orange-400 p-1'>
-                                                        {Object.entries(category).map(([key, value]) => (
-                                                            <div key={key}>
-                                                                <div>{value}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )} */}
                                     </div>
-                                    {/* {ratingResult.promtReplacement && (
-                                        <div className='bg-black  text-white font-medium p-1 px-2'>{ratingResult.promtReplacement}</div>
-                                    )} */}
-                                    <div className={isInputNotEmpty && promtReplacement ? `min-h-6` : `h-0`}>
+                                   
+                                    <div className={suggestion || loadingSuggestion ? `min-h-6` : `h-0`}>
                                         <div className='flex flex-row items-center'>
-                                            <div className='text-neutral-300 h-6 px-6 mr-2 flex flex-col items-center justify-center'>
-                                                <CgDanger size={22} />
+                                            <div className='text-neutral-300 h-6 px-4 mr-2 flex flex-col items-center justify-center'>
+                                                {loadingSuggestion ? <PuffLoader  color="#000000" loading={loadingPromtNewGrade || loadingPromt} size={30} /> : <CgDanger size={22} className='ml-1' />}
                                             </div>
                                             <div className='flex flex-row gap-4 mr-36'>
-                                                <div className='text-sm border-2 border-cyan-400 text-cyan-400 font-semibold rounded-xl px-2 p-1'>Example suggesion</div>
+                                                <div className='text-sm border-2 border-cyan-400 text-cyan-400 font-semibold rounded-xl px-2 p-1'>{suggestion}</div>
                                                 <div className='text-sm border-2 border-violet-400 text-violet-400 font-semibold rounded-xl px-2 p-1'>Example suggesion</div>
                                             </div>
                                         </div>
@@ -269,7 +252,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                     <div
                                                     className="text-lg font-semibold rounded-full w-8 h-8 min-w-8 flex items-center justify-center"
                                                     style={{
-                                                        backgroundColor: getGradeColor(Number(grade)),
+                                                        backgroundColor: getGradeColor(Number(gradeNewPromt)),
                                                         color: '#FFFFFF' // Always set text color to white
                                                     }}
                                                 >
@@ -285,7 +268,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                             </div>
 
                                             {(loadingPromt || promtReplacement) && (
-                                                <div className='flex flex-col items-center justify-center gap-3 text-xs text-neutral-400'>
+                                                <div className='flex flex-col items-center justify-center gap-3 text-xs text-neutral-400 min-w-10'>
                                                     <div>str + K</div>
                                                     <div> ⌘ + K</div>                                             
                                                 </div>
