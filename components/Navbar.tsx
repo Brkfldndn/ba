@@ -45,6 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
   const STUDY_ID = searchParams.get("STUDY_ID");
   const SESSION_ID = searchParams.get("SESSION_ID");
   const study = searchParams.get("study");
+  const group = searchParams.get("group");
 
   // Get and parse taskIndex from URL parameters
   const taskIndexParam = searchParams.get("index");
@@ -54,7 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
   const handleNextTask = () => {
     if (taskIndex < data.length - 1) {
       router.push(
-        `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex + 1}`
+        `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex + 1}&group=${group}`
       );
     }
   };
@@ -63,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
   const handlePreviousTask = () => {
     if (taskIndex > 0) {
       router.push(
-        `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex - 1}`
+        `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex - 1}&group=${group}`
       );
     }
   };
@@ -71,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
   // Handle navigation to a specific task
   const handleTaskClick = (index: number) => {
     router.push(
-      `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${index}`
+      `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${index}&group=${group}`
     );
   };
 
@@ -85,10 +86,10 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
         <FaArrowLeft size={15} rotate={90} />
         <div>{`Task ${taskIndex}`}</div>
       </Button>
-      <div className="flex flex-row items-center justify-center gap-5 ">
+      {/* <div className="flex flex-row items-center justify-center gap-5 ">
         <div className="font-semibold text-xl">{`Task ${taskIndex + 1}`}</div>
         <Stopwatch />
-      </div>
+      </div> */}
       <div className="flex flex-row items-center gap-2">
         {data.map((_, index) => {
           const isCurrentTask = index === taskIndex;

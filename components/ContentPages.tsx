@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import GPT_ratingv1 from "./GPT_ratingv1";
+import { MDXRemote } from 'next-mdx-remote/rsc';
+import Markdown from 'react-markdown';
+import Stopwatch from './StopWatch';
 
 interface StudyInstruction {
   study_id: number;
   created_at: string;
   titel: string;
   description: string;
-  instruction?: string; // Optional field for instruction if needed
+  instruction?: any; // Optional field for instruction if needed
 }
 
 interface ContentPagesProps {
@@ -31,6 +34,7 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
 
   const { toast } = useToast();
   const instructionRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const taskIndexParam = searchParam.get("index");
@@ -72,13 +76,15 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
       <ResizablePanel defaultSize={50}>
         <ResizablePanelGroup direction="vertical">
           <ResizablePanel defaultSize={75}>
-            <div className="flex flex-col h-full p-6">
+            <div className="flex flex-col h-full px-6 pt-6">
               <div className="font-semibold w-full flex flex-row justify-between items-center">
-                <div>Aufgabenstellung</div>
+                <div className="text-lg">Task {taskIndex + 1}</div>
               </div>
-              <div ref={instructionRef}>
+              <div ref={instructionRef} className="overflow-scroll h-full">
                 {Array.isArray(data) && data.length > 0 && (
-                  <div key={taskIndex}>{data[taskIndex]?.instruction || "No instruction provided."}</div>
+                  <div className='overflow-scroll h-full'>
+                    <Markdown>{data[taskIndex]?.instruction}</Markdown>
+                  </div>
                 )}
               </div>
             </div>
@@ -88,6 +94,7 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
             <div className="flex flex-col h-full p-6">
               <div className="font-semibold w-full flex flex-row justify-between items-center">
                 <div>Answer</div>
+                <Stopwatch />
               </div>
               <div className="pt-2 h-full flex flex-col">
                 <Textarea

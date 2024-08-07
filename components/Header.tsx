@@ -18,7 +18,7 @@ const Header = () => {
 
             </div>
             <div>
-                Prolific ID
+                {/* Prolific ID */}
             </div>
         </div>
      );
