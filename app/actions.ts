@@ -90,7 +90,7 @@ export async function generateSug(input: string) {
   (async () => {
     const { partialObjectStream } = await streamObject({
       model: openai('gpt-4-turbo'),
-      system: 'You gernerate autocomplete suggestion based on an unfinished promt',
+      system: '',
       prompt: input,
       schema: z.object({
         notifications: z.array(

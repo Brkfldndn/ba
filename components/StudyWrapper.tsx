@@ -21,8 +21,7 @@ const StudyWrapper: React.FC<StudyWrapperProps> = ({ data, questions, group }) =
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const previousTaskIndex = useRef<number | null>(null);
+  
 
 
   useEffect(() => {

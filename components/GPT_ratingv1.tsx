@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { FaArrowUp } from "react-icons/fa6";
-import { GoSearch } from "react-icons/go";
-import { generateGrade, generatePromtReplacement, generateRating, generateSuggestions } from '../app/actions';
+import { GoPerson, GoSearch } from "react-icons/go";
+import { GiStarShuriken } from "react-icons/gi";
+import { generateGrade, generatePromtReplacement, generateRating, generateSug, generateSuggestions } from '../app/actions';
 import { useChat } from 'ai/react';
 import { CgDanger } from "react-icons/cg";
 import BounceLoader from "react-spinners/BounceLoader";
@@ -18,22 +19,18 @@ interface GPT_ratingv1Props {
 
 const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
-    // const { messages, input, handleInputChange, handleSubmit, data } = useChat();
+    const { messages, input: chatInput, handleInputChange, handleSubmit, data } = useChat();
     const [input, setInput] = useState('');
     const [isInputNotEmpty, setIsInputNotEmpty] = useState(false);
     const [debouncedInput, setDebouncedInput] = useState('');
+    // const [messages, setMessages] = useState<string[]>([])
 
     const [loadingPromt, setLoadingPromt] = useState(false);
     const [loadingPromtNewGrade, setLoadingPromtNewGrade] = useState(false);
     const [loadingGradeinput, setLoadingGradeinput] = useState(false);
     const [loadingSuggestion, setLloadingSuggestion] = useState(false);
-    // const [loadingPromt, setLoadingPromt] = useState(false);
 
-    // const [ratingResult, setRatingResult] = useState({
-    //     grade: 0,
-    //     categories: {},
-    //     promtReplacement: ""
-    // });
+    
     const [grade, setGrade] = useState<string>("");
     const [gradeNewPromt, setGradeNewPromt] = useState<string>("");
     const [promtReplacement, setPromtReplacement] = useState<string | undefined>("");
@@ -54,6 +51,22 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             clearTimeout(handler);
         };
     }, [input]);
+
+
+    useEffect(() => {
+        // Sync local input with useChat's input on mount
+        setInput(chatInput);
+      }, [chatInput]);
+    
+      const handleLocalInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setInput(value); // Update local input
+        handleInputChange(e); // Sync with useChat's input
+      };
+
+
+
+
 
     // Generate grade
     useEffect(() => {
@@ -127,7 +140,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     // Generate suggestions/nudges
     useEffect(() => {
-        if (group === 'treatment' && debouncedInput) {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
                 setLloadingSuggestion(true)
                 try {
@@ -147,20 +160,28 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     useEffect(() => {
         const handleKeydown = (event: KeyboardEvent) => {
+            // Check for Ctrl+K or Cmd+K to trigger handlePromtReplacementClick
             if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
                 event.preventDefault();
                 handlePromtReplacementClick();
             }
+    
+            // Check for Enter key to trigger promtSubmit
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSubmit(event as any); 
+                setIsInputNotEmpty(false);
+            }
         };
-
+    
         window.addEventListener('keydown', handleKeydown);
-
+    
         return () => {
             window.removeEventListener('keydown', handleKeydown);
         };
-    }, [promtReplacement]);
+    }, [promtReplacement, input]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const prehandleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInput(value);
         // setGrade("");
@@ -181,7 +202,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         }
 
         // oder wenn enter dann
-        // handleSubmit(e
+        // handleSubmit()
     };
 
     const handlePromtReplacementClick = () => {
@@ -190,6 +211,34 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         setPromtReplacement(""); 
         autoResizeTextarea();
     };
+
+    const combinedHandleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        prehandleInputChange(e); // Call your prehandleInputChange function
+        handleInputChange(e);    // Call the original handleInputChange function
+    };
+
+    const handleButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setDebouncedInput(input); // First action you want to perform
+        handleSubmit(event as any); // Call handleSubmit after
+    };
+
+
+    // const handlePromtSubmit = () => {
+
+    //     setMessages((prevMessages) => [...prevMessages, input]);
+
+    //     const response = generateSug(input)
+
+    //     setMessages((prevMessages) => [...prevMessages, response]);
+    //     setInput('');
+    //     // setIsInputNotEmpty((promtReplacement || '').trim().length > 0);
+    //     setPromtReplacement(""); 
+    //     // autoResizeTextarea();
+       
+
+
+    //     // call action to generate a message in the role of ai
+    // };
 
     const autoResizeTextarea = () => {
         if (textareaRef.current) {
@@ -215,6 +264,31 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     return (
         <div className="flex flex-col w-full h-full relative">
+
+            <div className="flex flex-col space-y-4 overflow-scroll p-2 mb-16">
+                {messages
+                    .filter((message) => message.role !== "system")
+                    .map((message, index) => (
+                        <div
+                            key={index}
+                            className={`p-2 rounded ${message.role === "user" ? "text-right" : "text-left"}`}
+                        >
+                            <div className="flex flex-row gap-5 items-start">
+                                <div className="flex-shrink-0">
+                                    {message.role === "user" ? 
+                                        <GoPerson size={25} /> :
+                                        <GiStarShuriken color='#21d9c3' size={25} />
+                                    }
+                                </div>
+                                <div className="flex-1 whitespace-pre-wrap">
+
+                                    test m
+                                    {message.content}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+            </div>
             <div
                 className={`flex ${isInputNotEmpty ? 'items-start flex-col ' : 'items-center flex-row'} absolute bottom-0 w-full bg-neutral-100 rounded-3xl transition-all duration-300  ${
                     isInputNotEmpty ? '' : 'h-16'
@@ -305,7 +379,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                         ref={textareaRef}
                         className="flex-1 border-none bg-transparent outline-none pl-6 resize-none overflow-hidden z-20"
                         value={input}
-                        onChange={handleInputChange}
+                        onChange={combinedHandleChange}
                         onKeyPress={handleKeyPress}
                         placeholder="Send a message to Chat-GPT..."
                         rows={1}
@@ -313,7 +387,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                     />
                     <Button
                         className={`h-[40px] w-[40px] relative ${isInputNotEmpty ? `border-none bg-black` : ` border-2 border-neutral-200 bg-white text-neutral-300`} rounded-3xl mr-2 `}
-                        onClick={() => setDebouncedInput(input)}
+                        onClick={handleButtonClick}
                         disabled={input.trim() === ""}
                         // onClick={handleSubmit}
                     >
