@@ -20,9 +20,14 @@ interface StudyInstruction {
   instruction?: any; // Optional field for instruction if needed
 }
 
+interface AnswerData {
+  answer: string;
+  // Add more fields as necessary
+}
+
 interface ContentPagesProps {
   data: StudyInstruction[];
-  answers: { [key: number]: string };
+  answers: { [key: number]: AnswerData };
   handleAnswerChange: (index: number, value: string) => void;
   group: string | undefined;
 }
@@ -100,7 +105,7 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
                 <Textarea
                   className="h-full min-h-[100px] resize-none border p-2 rounded"
                   placeholder="Type your answer here."
-                  value={answers[taskIndex] || ""}
+                  value={answers[taskIndex]?.answer || ""}
                   onChange={(e) => handleAnswerChange(taskIndex, e.target.value)}
                 />
               </div>

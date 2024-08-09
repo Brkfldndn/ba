@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa6";
 import Stopwatch from "@/components/StopWatch";
@@ -23,22 +24,23 @@ interface StudyInstruction {
   created_at: string;
   titel: string;
   description: string;
-  instruction?: string; // Optional field for instruction if needed
+  instruction?: string;
 }
+
 
 interface NavbarProps {
   data: StudyInstruction[];
-  formData: { [key: number]: string };
+  formData: { [key: number]: any };
+  updateFormData: (index: number, value: any) => void; // Add this prop
   handleSubmit: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
-  console.log("Navbar component data:", data);
-  console.log(data.length);
-  console.log("FormData:", formData); // Added logging
-  
+const Navbar: React.FC<NavbarProps> = ({ data, formData, updateFormData, handleSubmit }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [startTime, setStartTime] = useState<Date | null>(new Date());
+  const previousTaskIndex = useRef<number | null>(null);
 
   // Extract existing URL parameters
   const PROLIFIC_PID = searchParams.get("PROLIFIC_PID");
@@ -51,8 +53,69 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
   const taskIndexParam = searchParams.get("index");
   const taskIndex = taskIndexParam ? parseInt(taskIndexParam, 10) : 0;
 
+
+
+
+
+
+// useEffect to start the timer on component mount
+useEffect(() => {
+  // Set the start time when the component mounts
+  setStartTime(new Date());
+
+  // Cleanup on unmount
+  return () => {
+    updateTimeSpent();
+  };
+}, []);
+
+// Function to handle time tracking and updating total_time_spent
+const updateTimeSpent = () => {
+  if (startTime) {
+    const endTime = new Date();
+    const timeSpent = (endTime.getTime() - startTime.getTime()) / 1000; // Calculate time in seconds
+
+    if (previousTaskIndex.current !== null) {
+      // Retrieve the previous data from the store
+      const previousAnswerData = { ...formData[previousTaskIndex.current] } || {};
+      
+      // Retrieve the previously accumulated time for the task
+      const previousTotalTimeSpent = previousAnswerData.total_time_spent || 0;
+
+      console.log('prevTIme:', previousTotalTimeSpent);
+
+      // Accumulate the new time spent
+      const newTotalTimeSpent = previousTotalTimeSpent + timeSpent;
+      previousAnswerData.total_time_spent = newTotalTimeSpent;
+
+      console.log('Updated time spent:', previousAnswerData);
+
+      // Update the formData with the new total_time_spent
+      updateFormData(previousTaskIndex.current, previousAnswerData);
+    }
+
+    // Set the current task as the previous one and reset the start time
+    previousTaskIndex.current = taskIndex;
+    setStartTime(new Date());
+  }
+};
+
+
+// Call updateTimeSpent whenever the task index changes
+useEffect(() => {
+  updateTimeSpent();
+}, [taskIndex]);
+
+
+
+
+
+
+
+
   // Handle navigation to the next task
   const handleNextTask = () => {
+    updateTimeSpent();
     if (taskIndex < data.length - 1) {
       router.push(
         `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex + 1}&group=${group}`
@@ -62,6 +125,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
 
   // Handle navigation to the previous task
   const handlePreviousTask = () => {
+    updateTimeSpent();
     if (taskIndex > 0) {
       router.push(
         `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${taskIndex - 1}&group=${group}`
@@ -71,6 +135,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
 
   // Handle navigation to a specific task
   const handleTaskClick = (index: number) => {
+    updateTimeSpent();
     router.push(
       `?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=${index}&group=${group}`
     );
@@ -86,15 +151,12 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
         <FaArrowLeft size={15} rotate={90} />
         <div>{`Task ${taskIndex}`}</div>
       </Button>
-      {/* <div className="flex flex-row items-center justify-center gap-5 ">
-        <div className="font-semibold text-xl">{`Task ${taskIndex + 1}`}</div>
-        <Stopwatch />
-      </div> */}
       <div className="flex flex-row items-center gap-2">
         {data.map((_, index) => {
           const isCurrentTask = index === taskIndex;
-          const hasAnswer = formData && formData[index] !== undefined && formData[index] !== "";
-          console.log(`Index ${index}: ${hasAnswer ? "Has answer" : "No answer"}`); // Added logging
+          const taskData = formData[index]; // Access the form data for the current task
+          const hasAnswer = taskData && taskData.answer && taskData.answer !== ""; // Check if the answer exists and is not empty
+          
           return (
             <div
               key={index}
@@ -137,7 +199,10 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, handleSubmit }) => {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSubmit}>
+              <AlertDialogAction onClick={() => {
+                updateTimeSpent();
+                handleSubmit();
+              }}>
                 Submit
               </AlertDialogAction>
             </AlertDialogFooter>
