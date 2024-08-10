@@ -11,6 +11,9 @@ import { CgDanger } from "react-icons/cg";
 import BounceLoader from "react-spinners/BounceLoader";
 import PropagateLoader from "react-spinners/PropagateLoader";
 import PuffLoader from "react-spinners/PuffLoader";
+import useFormStore from '@/app/tasks/store/useFormStore';
+import { useSearchParam } from 'react-use';
+import { useSearchParams } from 'next/navigation';
 
 
 interface GPT_ratingv1Props {
@@ -19,7 +22,13 @@ interface GPT_ratingv1Props {
 
 const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
-    const { messages, input: chatInput, handleInputChange, handleSubmit, data } = useChat();
+    const { messages, input: chatInput, handleInputChange, handleSubmit } = useChat({
+        onFinish: (message) => {
+            pushtoFormStore();
+        }
+    });
+    
+    
     const [input, setInput] = useState('');
     const [isInputNotEmpty, setIsInputNotEmpty] = useState(false);
     const [debouncedInput, setDebouncedInput] = useState('');
@@ -39,6 +48,11 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     // or call them Nudges
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const searchParam = useSearchParams()
+    const index = searchParam.get("index")
+    // const { updateFormData } = useFormStore();
+    const { formData, updateFormData } = useFormStore(); // Access formData from the store
 
     // if group is treatment then retain all functionalities, else only input field with enter button
 
@@ -66,28 +80,124 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
 
 
+    //only interst the text here for now
+
+    useEffect(() => {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
+            // Get the current task index from search parameters
+            const taskIndex = index ? parseInt(index, 10) : 0;
+    
+            // Capture the current data for the task index
+            let currentData = formData[taskIndex]?.response_data || [];
+            if (!Array.isArray(currentData)) {
+                currentData = []; // Ensure it's always an array
+            }
+    
+            // Update the unfinished_prompt with only the debouncedInput text
+            const updatedResponseData = [
+                ...currentData,  // Spread the existing data
+                {
+                    unfinished_prompt: {
+                        text: debouncedInput, // Use debouncedInput as the text for unfinished_prompt
+                        prompt_replacement: {
+                            replacement_text: "", // Placeholder for now
+                            grade: 0, // Placeholder for now
+                        },
+                        grade: 0, // Placeholder for now
+                        suggestions: [], // Placeholder for now
+                    },
+                },
+            ];
+    
+            // Update the form store with the new data
+            updateFormData(taskIndex, {
+                ...formData[taskIndex],
+                response_data: updatedResponseData,
+            });
+    
+            console.log("Updated formData with new unfinished_prompt:", useFormStore.getState().formData);
+        }
+    }, [debouncedInput]);
+    
 
 
-    // Generate grade
+    
+
+
+    // Generate grade and insert it into formStore
+
+
+    // problem gleiche funktion läuft auch bei dem Promtreplacement => ergebnis ist das grades in formstore vertaiuscht werden =>>!!!! funcitonmuss aufgeteilt werden
     useEffect(() => {
         if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
-                setLoadingGradeinput(true)
+                setLoadingGradeinput(true);
                 try {
                     const gradeResponse = await generateGrade(debouncedInput);
                     const gradeValue = gradeResponse?.grade ?? 0; // Extract the grade value
                     setGrade(String(gradeValue)); // Ensure grade is a string
                     console.log('Grade:', gradeValue);
+    
+                    // Update the form store with the new grade
+                    const taskIndex = index ? parseInt(index, 10) : 0; // Ensure you have the correct index
+                    let currentData = formData[taskIndex]?.response_data || [];
+    
+                    // Ensure it's an array
+                    if (!Array.isArray(currentData)) {
+                        currentData = []; 
+                    }
+    
+                    // Find the unfinished_prompt with matching debouncedInput text and update its grade
+                    const updatedResponseData = currentData.map((item) => {
+                        if (item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput) {
+                            return {
+                                ...item,
+                                unfinished_prompt: {
+                                    ...item.unfinished_prompt,
+                                    grade: gradeValue, // Update grade here
+                                },
+                            };
+                        }
+                        return item;
+                    });
+    
+                    // If the debouncedInput doesn't match any existing unfinished_prompt, add a new one
+                    const foundMatch = updatedResponseData.some(item => item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput);
+    
+                    if (!foundMatch) {
+                        updatedResponseData.push({
+                            unfinished_prompt: {
+                                text: debouncedInput, // Use debouncedInput as the text for unfinished_prompt
+                                prompt_replacement: {
+                                    replacement_text: "", // Placeholder for now
+                                    grade: 0, // Placeholder grade value
+                                },
+                                grade: gradeValue, // Update grade here
+                                suggestions: [], // Placeholder for suggestions
+                            },
+                        });
+                    }
+    
+                    // Update the form store
+                    updateFormData(taskIndex, {
+                        ...formData[taskIndex],
+                        response_data: updatedResponseData,
+                    });
+    
+                    console.log("Updated formData with grade:", useFormStore.getState().formData);
+    
                 } catch (error) {
                     console.error('Error generating grade:', error);
-                } finally {
-                    setLoadingGradeinput(false)
+                } finally {
+                    setLoadingGradeinput(false);
                 }
             })();
         }
     }, [debouncedInput]);
+    
+    
 
-    // Generate prompt replacement
+    // Generate prompt replacement and add it to formStore
     useEffect(() => {
         if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
@@ -97,13 +207,59 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                     const promtReplacementValue = promtReplacementResponse?.promtReplacement ?? ''; // Extract the promtReplacement property
                     setPromtReplacement(promtReplacementValue); // Set the extracted value
                     
-                    // const gradeNewPromtResponse = await generateGrade(promtReplacement);
-                    // const gradeNewPromtValue = gradeNewPromtResponse?.grade ?? 0; // Extract the grade value
-                    // setGradeNewPromt(String(gradeNewPromtValue)); // Ensure grade is a string
-                    // console.log('Grade:', gradeNewPromtValue);
-
-                    
                     console.log('newPromtreplacement:', promtReplacementResponse);
+    
+                    // Update the form store with the new prompt replacement
+                    const taskIndex = index ? parseInt(index, 10) : 0; // Ensure you have the correct index
+                    let currentData = formData[taskIndex]?.response_data || [];
+    
+                    // Ensure it's an array
+                    if (!Array.isArray(currentData)) {
+                        currentData = []; 
+                    }
+    
+                    // Find the unfinished_prompt with matching debouncedInput text and update its prompt_replacement
+                    const updatedResponseData = currentData.map((item) => {
+                        if (item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput) {
+                            return {
+                                ...item,
+                                unfinished_prompt: {
+                                    ...item.unfinished_prompt,
+                                    prompt_replacement: {
+                                        ...item.unfinished_prompt.prompt_replacement,
+                                        replacement_text: promtReplacementValue, // Update replacement_text here
+                                    },
+                                },
+                            };
+                        }
+                        return item;
+                    });
+    
+                    // If the debouncedInput doesn't match any existing unfinished_prompt, add a new one
+                    const foundMatch = updatedResponseData.some(item => item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput);
+    
+                    if (!foundMatch) {
+                        updatedResponseData.push({
+                            unfinished_prompt: {
+                                text: debouncedInput, // Use debouncedInput as the text for unfinished_prompt
+                                prompt_replacement: {
+                                    replacement_text: promtReplacementValue, // Use the newly fetched prompt replacement
+                                    grade: 0, // Placeholder grade value
+                                },
+                                grade: 0, // Placeholder grade value
+                                suggestions: [], // Placeholder for suggestions
+                            },
+                        });
+                    }
+    
+                    // Update the form store
+                    updateFormData(taskIndex, {
+                        ...formData[taskIndex],
+                        response_data: updatedResponseData,
+                    });
+    
+                    console.log("Updated formData with new prompt replacement:", useFormStore.getState().formData);
+    
                 } catch (error) {
                     console.error('Error generating prompt replacement:', error);
                 } finally {
@@ -112,7 +268,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             })();
         }
     }, [debouncedInput]);
-
+    
 
     // Generate prompt replacement grade
     useEffect(() => {
@@ -167,9 +323,10 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             }
     
             // Check for Enter key to trigger promtSubmit
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                handleSubmit(event as any); 
+                // handleSubmit(event as any); 
+                handleButtonClick(event as any);
                 setIsInputNotEmpty(false);
             }
         };
@@ -180,6 +337,14 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             window.removeEventListener('keydown', handleKeydown);
         };
     }, [promtReplacement, input]);
+
+
+    
+
+
+
+
+
 
     const prehandleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
@@ -217,28 +382,69 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         handleInputChange(e);    // Call the original handleInputChange function
     };
 
-    const handleButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setDebouncedInput(input); // First action you want to perform
-        handleSubmit(event as any); // Call handleSubmit after
+
+
+
+
+    const pushtoFormStore = () => {
+        console.log("abgeschlossen")
+
+        // Get the current task index from search parameters
+        const taskIndex = index ? parseInt(index, 10) : 0;
+
+        // Capture the user's input before submitting
+        const userInput2 = input;
+        console.log(`input ${userInput2}`);
+
+        // Capture the AI's latest response
+        const aiResponse = messages[messages.length - 1]?.content || "";
+        console.log(`ai response ${aiResponse}`);
+
+        // Capture the current data for the task index
+        let currentData = formData[taskIndex]?.response_data || [];
+        if (!Array.isArray(currentData)) {
+            currentData = []; // Ensure it's always an array
+        }
+        console.log(`current data before update:`, currentData);
+    
+        // Add the new prompt-response pair to the response_data array
+        const updatedResponseData = [
+            ...currentData,  // Spread the existing data
+            {
+                prompt: {
+                    text: userInput2, // Correctly capture the user's input
+                    response: aiResponse, // Correctly capture the AI's response
+                },
+            },
+        ];
+    
+        console.log(`updatedResponseData with new entry:`, updatedResponseData);
+    
+        // Update the form store with the new data
+        updateFormData(taskIndex, {
+            ...formData[taskIndex],
+            response_data: updatedResponseData,
+        });
+    
+        console.log("Updated formData:", useFormStore.getState().formData);
+
+    }
+
+
+
+    const handleButtonClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+        console.log("ist gelaufen");
+        event.preventDefault();
+        await handleSubmit(event as any); // Process the input   
     };
+    
 
 
-    // const handlePromtSubmit = () => {
-
-    //     setMessages((prevMessages) => [...prevMessages, input]);
-
-    //     const response = generateSug(input)
-
-    //     setMessages((prevMessages) => [...prevMessages, response]);
-    //     setInput('');
-    //     // setIsInputNotEmpty((promtReplacement || '').trim().length > 0);
-    //     setPromtReplacement(""); 
-    //     // autoResizeTextarea();
-       
 
 
-    //     // call action to generate a message in the role of ai
-    // };
+    
+    
+
 
     const autoResizeTextarea = () => {
         if (textareaRef.current) {
@@ -281,8 +487,6 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                     }
                                 </div>
                                 <div className="flex-1 whitespace-pre-wrap">
-
-                                    test m
                                     {message.content}
                                 </div>
                             </div>

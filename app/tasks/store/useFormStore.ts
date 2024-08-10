@@ -15,15 +15,15 @@ interface UnfinishedPromptData {
   suggestions: string[];
 }
 
-interface ResponseData {
-  prompt: PromptData;
-  unfinished_prompt: UnfinishedPromptData;
+interface ResponseDataItem {
+  prompt?: PromptData;
+  unfinished_prompt?: UnfinishedPromptData;
 }
 
 interface FormData {
   answer: string;
   total_time_spent: number;
-  response_data: ResponseData;
+  response_data: ResponseDataItem[]; // Array of ResponseDataItem
 }
 
 interface FormStore {
@@ -31,6 +31,7 @@ interface FormStore {
     [key: number]: FormData;
   };
   updateFormData: (index: number, data: Partial<FormData>) => void;
+  addResponseDataItem: (index: number, dataItem: ResponseDataItem) => void;
 }
 
 const useFormStore = create<FormStore>((set) => ({
@@ -42,6 +43,19 @@ const useFormStore = create<FormStore>((set) => ({
         [index]: {
           ...state.formData[index],
           ...data,
+        },
+      },
+    })),
+  addResponseDataItem: (index, dataItem) =>
+    set((state) => ({
+      formData: {
+        ...state.formData,
+        [index]: {
+          ...state.formData[index],
+          response_data: [
+            ...state.formData[index].response_data,
+            dataItem,
+          ],
         },
       },
     })),
