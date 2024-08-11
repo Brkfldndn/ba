@@ -24,7 +24,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
     const { messages, input: chatInput, handleInputChange, handleSubmit } = useChat({
         onFinish: (message) => {
-            pushtoFormStore();
+            pushtoFormStore(message);
         }
     });
     
@@ -385,9 +385,10 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
 
 
+    const pushtoFormStore = (message: any) => {
 
-    const pushtoFormStore = () => {
-        console.log("abgeschlossen")
+        console.log("letzte Response", message.content)
+        console.log("pushFormStore")
 
         // Get the current task index from search parameters
         const taskIndex = index ? parseInt(index, 10) : 0;
@@ -395,11 +396,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         // Capture the user's input before submitting
         const userInput2 = input;
         console.log(`input ${userInput2}`);
-
-        // Capture the AI's latest response
-        const aiResponse = messages[messages.length - 1]?.content || "";
-        console.log(`ai response ${aiResponse}`);
-
+        
         // Capture the current data for the task index
         let currentData = formData[taskIndex]?.response_data || [];
         if (!Array.isArray(currentData)) {
@@ -413,7 +410,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             {
                 prompt: {
                     text: userInput2, // Correctly capture the user's input
-                    response: aiResponse, // Correctly capture the AI's response
+                    response: message.content, // Correctly capture the AI's response
                 },
             },
         ];
@@ -427,7 +424,6 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         });
     
         console.log("Updated formData:", useFormStore.getState().formData);
-
     }
 
 
