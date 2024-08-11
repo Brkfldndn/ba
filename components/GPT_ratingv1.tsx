@@ -48,6 +48,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     // or call them Nudges
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     const searchParam = useSearchParams()
     const index = searchParam.get("index")
@@ -437,9 +438,15 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
 
 
-
+    const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
     
-    
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
 
     const autoResizeTextarea = () => {
@@ -487,7 +494,8 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                ))}
+                <div ref={messagesEndRef} />
             </div>
             <div
                 className={`flex ${isInputNotEmpty ? 'items-start flex-col ' : 'items-center flex-row'} absolute bottom-0 w-full bg-neutral-100 rounded-3xl transition-all duration-300  ${
