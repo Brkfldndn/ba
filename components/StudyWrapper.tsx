@@ -96,7 +96,7 @@ const StudyWrapper: React.FC<StudyWrapperProps> = ({ data, questions, group }) =
         question_id: question.question_id,
         prolific_id,
         response_text: formDataEntry.answer, // Ensure this is the correct field
-        response_data: JSON.stringify(formDataEntry.response_data), // Correctly stringify response_data
+        response_data: JSON.stringify(formDataEntry), // Correctly stringify response_data
         grade: formDataEntry.response_data?.find((item: any) => item.unfinished_prompt)?.unfinished_prompt?.grade || grade, // Use the specific grade if available
         passed,
         start_time,

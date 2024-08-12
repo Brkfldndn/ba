@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FaArrowUp } from "react-icons/fa6";
 import { GoPerson, GoSearch } from "react-icons/go";
 import { GiStarShuriken } from "react-icons/gi";
-import { generateGrade, generatePromtReplacement, generateRating, generateSug, generateSuggestions } from '../app/actions';
+import { generateGrade, generatePromtReplacement, generateRating, generateSug, generateSuggestion2, generateSuggestions } from '../app/actions';
 import { useChat } from 'ai/react';
 import { CgDanger } from "react-icons/cg";
 import BounceLoader from "react-spinners/BounceLoader";
@@ -44,6 +44,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const [gradeNewPromt, setGradeNewPromt] = useState<string>("");
     const [promtReplacement, setPromtReplacement] = useState<string | undefined>("");
     const [suggestion, setSuggestion] = useState<string | undefined>("");
+    const [suggestion2, setSuggestion2] = useState<string | undefined>("");
     // evaluate whether unique suggestions is the better way do do that 
     // or call them Nudges
 
@@ -87,6 +88,10 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             // Get the current task index from search parameters
             const taskIndex = index ? parseInt(index, 10) : 0;
+
+
+            // Access the form store
+            const formData = useFormStore.getState().formData;
     
             // Capture the current data for the task index
             let currentData = formData[taskIndex]?.response_data || [];
@@ -122,13 +127,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     
 
 
+
+
+
+
+
+
     
 
 
     // Generate grade and insert it into formStore
-
-
-    // problem gleiche funktion läuft auch bei dem Promtreplacement => ergebnis ist das grades in formstore vertaiuscht werden =>>!!!! funcitonmuss aufgeteilt werden
     useEffect(() => {
         if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
@@ -137,20 +145,23 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                     const gradeResponse = await generateGrade(debouncedInput);
                     const gradeValue = gradeResponse?.grade ?? 0; // Extract the grade value
                     setGrade(String(gradeValue)); // Ensure grade is a string
-                    console.log('Grade:', gradeValue);
+                    console.log('Generated Grade:', gradeValue);
     
-                    // Update the form store with the new grade
-                    const taskIndex = index ? parseInt(index, 10) : 0; // Ensure you have the correct index
+                    // Get the current task index from search parameters
+                    const taskIndex = index ? parseInt(index, 10) : 0;
+    
+                    // Access the form store
+                    const formData = useFormStore.getState().formData;
+    
+                    // Capture the current data for the task index
                     let currentData = formData[taskIndex]?.response_data || [];
-    
-                    // Ensure it's an array
                     if (!Array.isArray(currentData)) {
-                        currentData = []; 
+                        currentData = []; // Ensure it's always an array
                     }
     
-                    // Find the unfinished_prompt with matching debouncedInput text and update its grade
-                    const updatedResponseData = currentData.map((item) => {
-                        if (item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput) {
+                    // Map through the current data and update only the matching unfinished_prompt
+                    const updatedResponseData = currentData.map((item, idx) => {
+                        if (item.unfinished_prompt && idx === currentData.length - 1) {
                             return {
                                 ...item,
                                 unfinished_prompt: {
@@ -159,34 +170,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                 },
                             };
                         }
-                        return item;
+                        return item; // Preserve the rest of the entries as they are
                     });
     
-                    // If the debouncedInput doesn't match any existing unfinished_prompt, add a new one
-                    const foundMatch = updatedResponseData.some(item => item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput);
-    
-                    if (!foundMatch) {
-                        updatedResponseData.push({
-                            unfinished_prompt: {
-                                text: debouncedInput, // Use debouncedInput as the text for unfinished_prompt
-                                prompt_replacement: {
-                                    replacement_text: "", // Placeholder for now
-                                    grade: 0, // Placeholder grade value
-                                },
-                                grade: gradeValue, // Update grade here
-                                suggestions: [], // Placeholder for suggestions
-                            },
-                        });
-                    }
-    
-                    // Update the form store
+                    // Update the form store with the new data
                     updateFormData(taskIndex, {
                         ...formData[taskIndex],
                         response_data: updatedResponseData,
                     });
     
-                    console.log("Updated formData with grade:", useFormStore.getState().formData);
-    
+                    console.log("Updated formData with latest grade:", useFormStore.getState().formData);
                 } catch (error) {
                     console.error('Error generating grade:', error);
                 } finally {
@@ -197,6 +190,13 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     }, [debouncedInput]);
     
     
+    
+    
+    
+    
+    
+    
+    
 
     // Generate prompt replacement and add it to formStore
     useEffect(() => {
@@ -205,23 +205,26 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                 setLoadingPromt(true); // Start loading
                 try {
                     const promtReplacementResponse = await generatePromtReplacement(debouncedInput);
-                    const promtReplacementValue = promtReplacementResponse?.promtReplacement ?? ''; // Extract the promtReplacement property
+                    const promtReplacementValue = promtReplacementResponse?.promtReplacement ?? ''; // Extract the promptReplacement property
                     setPromtReplacement(promtReplacementValue); // Set the extracted value
                     
                     console.log('newPromtreplacement:', promtReplacementResponse);
     
-                    // Update the form store with the new prompt replacement
-                    const taskIndex = index ? parseInt(index, 10) : 0; // Ensure you have the correct index
-                    let currentData = formData[taskIndex]?.response_data || [];
+                    // Get the current task index from search parameters
+                    const taskIndex = index ? parseInt(index, 10) : 0;
     
-                    // Ensure it's an array
+                    // Access the form store
+                    const formData = useFormStore.getState().formData;
+    
+                    // Capture the current data for the task index
+                    let currentData = formData[taskIndex]?.response_data || [];
                     if (!Array.isArray(currentData)) {
-                        currentData = []; 
+                        currentData = []; // Ensure it's always an array
                     }
     
-                    // Find the unfinished_prompt with matching debouncedInput text and update its prompt_replacement
-                    const updatedResponseData = currentData.map((item) => {
-                        if (item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput) {
+                    // Update the latest unfinished_prompt with the new prompt replacement
+                    const updatedResponseData = currentData.map((item, idx) => {
+                        if (item.unfinished_prompt && idx === currentData.length - 1) {
                             return {
                                 ...item,
                                 unfinished_prompt: {
@@ -233,27 +236,10 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                 },
                             };
                         }
-                        return item;
+                        return item; // Preserve the rest of the entries as they are
                     });
     
-                    // If the debouncedInput doesn't match any existing unfinished_prompt, add a new one
-                    const foundMatch = updatedResponseData.some(item => item.unfinished_prompt && item.unfinished_prompt.text === debouncedInput);
-    
-                    if (!foundMatch) {
-                        updatedResponseData.push({
-                            unfinished_prompt: {
-                                text: debouncedInput, // Use debouncedInput as the text for unfinished_prompt
-                                prompt_replacement: {
-                                    replacement_text: promtReplacementValue, // Use the newly fetched prompt replacement
-                                    grade: 0, // Placeholder grade value
-                                },
-                                grade: 0, // Placeholder grade value
-                                suggestions: [], // Placeholder for suggestions
-                            },
-                        });
-                    }
-    
-                    // Update the form store
+                    // Update the form store with the new data
                     updateFormData(taskIndex, {
                         ...formData[taskIndex],
                         response_data: updatedResponseData,
@@ -271,22 +257,61 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     }, [debouncedInput]);
     
 
+
+
+
+    
+
     // Generate prompt replacement grade
     useEffect(() => {
-        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
+        if (group === 'treatment' && promtReplacement && promtReplacement.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
                 setLoadingPromtNewGrade(true); // Start loading
                 try {
-                    
+                    // Generate grade for the prompt replacement
                     const gradeNewPromtResponse = await generateGrade(promtReplacement || '');
                     const gradeNewPromtValue = gradeNewPromtResponse?.grade ?? 0; // Extract the grade value
                     setGradeNewPromt(String(gradeNewPromtValue)); // Ensure grade is a string
-                    console.log('Gradeof new promt:', gradeNewPromtValue);
+                    console.log('Grade of new prompt:', gradeNewPromtValue);
 
-                    
-                    console.log('newPromtreplacementGrade:', gradeNewPromt);
+                    // Get the current task index from search parameters
+                    const taskIndex = index ? parseInt(index, 10) : 0;
+
+                    // Access the form store
+                    const formData = useFormStore.getState().formData;
+
+                    // Capture the current data for the task index
+                    let currentData = formData[taskIndex]?.response_data || [];
+                    console.log('Current Data:', currentData);
+
+                    // Find the latest unfinished_prompt and update the grade for prompt_replacement
+                    const updatedResponseData = currentData.map((item, idx) => {
+                        if (item.unfinished_prompt && idx === currentData.length - 1) {
+                            // Update the prompt replacement grade
+                            return {
+                                ...item,
+                                unfinished_prompt: {
+                                    ...item.unfinished_prompt,
+                                    prompt_replacement: {
+                                        ...item.unfinished_prompt.prompt_replacement,
+                                        grade: gradeNewPromtValue, // Update the prompt replacement grade
+                                    },
+                                },
+                            };
+                        }
+                        return item;
+                    });
+
+                    // Update the form store with the new data
+                    updateFormData(taskIndex, {
+                        ...formData[taskIndex],
+                        response_data: updatedResponseData,
+                    });
+
+                    console.log("Updated formData with new prompt replacement grade:", useFormStore.getState().formData);
+
                 } catch (error) {
-                    console.error('Error generating prompt replacement:', error);
+                    console.error('Error generating prompt replacement grade:', error);
                 } finally {
                     setLoadingPromtNewGrade(false); // End loading
                 }
@@ -295,24 +320,127 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     }, [promtReplacement]);
 
 
-    // Generate suggestions/nudges
+
+
+
+
+    // Generate suggestion
     useEffect(() => {
         if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
             (async () => {
-                setLloadingSuggestion(true)
+                setLloadingSuggestion(true);
                 try {
                     const suggestionsResponse = await generateSuggestions(debouncedInput || '');
                     const suggestionsResponseValue = suggestionsResponse?.suggestions ?? '';
                     setSuggestion(suggestionsResponseValue); // Set the extracted value
                     console.log('newSuggestions:', suggestionsResponseValue);
+
+                    // Get the current task index from search parameters
+                    const taskIndex = index ? parseInt(index, 10) : 0;
+
+                    // Access the form store
+                    const formData = useFormStore.getState().formData;
+
+                    // Capture the current data for the task index
+                    let currentData = formData[taskIndex]?.response_data || [];
+                    console.log('Current Data:', currentData);
+
+                    // Find the latest unfinished_prompt and append the suggestion
+                    const updatedResponseData = currentData.map((item, idx) => {
+                        if (item.unfinished_prompt && idx === currentData.length - 1) {
+                            // Append the suggestion to the suggestions array
+                            return {
+                                ...item,
+                                unfinished_prompt: {
+                                    ...item.unfinished_prompt,
+                                    suggestions: [...(item.unfinished_prompt.suggestions || []), suggestionsResponseValue], // Append the suggestion
+                                },
+                            };
+                        }
+                        return item;
+                    });
+
+                    // Update the form store with the new data
+                    updateFormData(taskIndex, {
+                        ...formData[taskIndex],
+                        response_data: updatedResponseData,
+                    });
+
+                    console.log("Updated formData with new suggestions:", useFormStore.getState().formData);
+
                 } catch (error) {
                     console.error('Error generating suggestions:', error);
                 } finally {
-                    setLloadingSuggestion(false)
+                    setLloadingSuggestion(false);
                 }
             })();
         }
     }, [debouncedInput]);
+
+
+
+    
+
+
+
+    // Generate suggestion2
+    useEffect(() => {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
+            (async () => {
+                setLloadingSuggestion(true);
+                try {
+                    const suggestion2Response = await generateSuggestion2(debouncedInput || '');
+                    const suggestion2ResponseValue = suggestion2Response?.suggestion2 ?? '';
+                    setSuggestion2(suggestion2ResponseValue); // Set the extracted value
+                    console.log('newSuggestions2:', suggestion2ResponseValue);
+
+                    // Get the current task index from search parameters
+                    const taskIndex = index ? parseInt(index, 10) : 0;
+
+                    // Access the form store
+                    const formData = useFormStore.getState().formData;
+
+                    // Capture the current data for the task index
+                    let currentData = formData[taskIndex]?.response_data || [];
+                    console.log('Current Data:', currentData);
+
+                    // Find the latest unfinished_prompt and append the suggestion2
+                    const updatedResponseData = currentData.map((item, idx) => {
+                        if (item.unfinished_prompt && idx === currentData.length - 1) {
+                            // Append the suggestion2 to the suggestions array
+                            return {
+                                ...item,
+                                unfinished_prompt: {
+                                    ...item.unfinished_prompt,
+                                    suggestions: [...(item.unfinished_prompt.suggestions || []), suggestion2ResponseValue], // Append the suggestion2
+                                },
+                            };
+                        }
+                        return item;
+                    });
+
+                    // Update the form store with the new data
+                    updateFormData(taskIndex, {
+                        ...formData[taskIndex],
+                        response_data: updatedResponseData,
+                    });
+
+                    console.log("Updated formData with new suggestion2:", useFormStore.getState().formData);
+
+                } catch (error) {
+                    console.error('Error generating suggestion2:', error);
+                } finally {
+                    setLloadingSuggestion(false);
+                }
+            })();
+        }
+    }, [debouncedInput]);   
+
+
+
+
+
+
 
 
     useEffect(() => {
@@ -358,6 +486,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             setGrade("");
             setPromtReplacement("")
             setSuggestion("");
+            setSuggestion2("");
         }
     };
 
@@ -376,11 +505,13 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         setIsInputNotEmpty((promtReplacement || '').trim().length > 0);
         setPromtReplacement(""); 
         autoResizeTextarea();
+        
     };
 
     const combinedHandleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         prehandleInputChange(e); // Call your prehandleInputChange function
-        handleInputChange(e);    // Call the original handleInputChange function
+        handleInputChange(e);
+        // Call the original handleInputChange function
     };
 
 
@@ -517,8 +648,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                 {loadingSuggestion ? <PuffLoader  color="#000000" loading={loadingPromtNewGrade || loadingPromt} size={30} /> : <CgDanger size={22} className='ml-1' />}
                                             </div>
                                             <div className='flex flex-row gap-4 mr-36'>
-                                                <div className='text-sm border-2 border-cyan-400 text-cyan-400 font-semibold rounded-xl px-2 p-1'>{suggestion}</div>
-                                                <div className='text-sm border-2 border-violet-400 text-violet-400 font-semibold rounded-xl px-2 p-1'>Example suggesion</div>
+                                                {suggestion && (
+                                                <div className='text-sm border-2 border-cyan-400 text-cyan-400 font-semibold rounded-xl px-2 p-1'>
+                                                    {suggestion}
+                                                </div>
+                                                )}
+                                                {suggestion2 && (
+                                                <div className='text-sm border-2 border-violet-400 text-violet-400 font-semibold rounded-xl px-2 p-1'>
+                                                    {suggestion2}
+                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -585,7 +724,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
                     <textarea
                         ref={textareaRef}
-                        className="flex-1 border-none bg-transparent outline-none pl-6 resize-none overflow-hidden z-20"
+                        className="flex-1 border-none bg-transparent outline-none pl-6 resize-none overflow-hidden z-20 mt-[4px]"
                         value={input}
                         onChange={combinedHandleChange}
                         onKeyPress={handleKeyPress}

@@ -185,7 +185,7 @@ useEffect(() => {
       ) : (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="left-3 top-3 p-1 px-4 flex flex-row items-center gap-3 border-2 border-white border-opacity-100 bg-[#21d9c3] text-white hover:bg-white hover:border-[#21d9c3] hover:text-[#21d9c3]">
+            <Button className="left-3 top-3 p-1 px-4 flex flex-row items-center gap-3 border-2 border-white border-opacity-100 bg-[#21d9c3] text-white hover:bg-white hover:border-[#21d9c3] hover:text-[#21d9c3]" onClick={updateTimeSpent}>
               <div>Submit</div>
             </Button>
           </AlertDialogTrigger>

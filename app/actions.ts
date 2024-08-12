@@ -217,6 +217,24 @@ export async function generateSuggestions(input: string) {
 }
 
 
+
+export async function generateSuggestion2(input: string) {
+  'use server';
+
+  const { object: suggestion2 } = await generateObject({
+    model: openai('gpt-4-turbo'),
+    system: `If the promt is missing the format it should be outputed as return "which format", if it is unclear as to which format is meant output a short question concerning the output to clarify it. these are the only topics on which you output anything .`,
+    prompt: input,
+    schema: z.object({
+      suggestion2: z.string().optional()
+    })
+  });
+
+  console.log('newSuggestions:', suggestion2);
+  return suggestion2;
+}
+
+
 export async function generateDirection(input: string) {
   'use server';
 
