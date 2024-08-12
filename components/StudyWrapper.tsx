@@ -76,37 +76,35 @@ const StudyWrapper: React.FC<StudyWrapperProps> = ({ data, questions, group }) =
     console.log('Submitting answers...');
 
     const prolific_id = "example_prolific_id";
-    const grade = 5.0;
-    const passed = true;
-    const start_time = new Date().toISOString();
-    const end_time = new Date().toISOString();
+    // const start_time = new Date().toISOString();
+    // const end_time = new Date().toISOString();
 
-    // Ensure FormData is correctly typed as string for `response_text`
-    const dummyDataArray: DummyData[] = Object.entries(formData).map(([index, formDataEntry]) => {
-      const questionIndex = parseInt(index, 10);
-      const question = questions[questionIndex];
+    // Format data to match the updated table structure
+    const formattedDataArray = Object.entries(formData).map(([index, formDataEntry]) => {
+        const questionIndex = parseInt(index, 10);
+        const question = questions[questionIndex];
 
-      if (!question) {
-        console.error(`Question not found for taskIndex ${index}`);
-        return null;
-      }
+        if (!question) {
+            console.error(`Question not found for taskIndex ${index}`);
+            return null;
+        }
 
-      return {
-        created_at: new Date().toISOString(),
-        question_id: question.question_id,
-        prolific_id,
-        response_text: formDataEntry.answer, // Ensure this is the correct field
-        response_data: JSON.stringify(formDataEntry), // Correctly stringify response_data
-        grade: formDataEntry.response_data?.find((item: any) => item.unfinished_prompt)?.unfinished_prompt?.grade || grade, // Use the specific grade if available
-        passed,
-        start_time,
-        end_time,
-      };
+        return {
+            created_at: new Date().toISOString(),
+            question_id: question.question_id,
+            prolific_id,
+            answer: formDataEntry.answer || "", // Ensure this is the correct field
+            // prompts: JSON.stringify(formDataEntry.response_data?.filter((item: any) => item.prompt) || []), // Filter and stringify prompts
+            // test_for_prompts: "1",
+            test: JSON.stringify(formDataEntry.response_data?.filter((item: any) => item.prompt) || []),
+            unfinished_prompts: JSON.stringify(formDataEntry.response_data?.filter((item: any) => item.unfinished_prompt) || []), // Filter and stringify unfinished prompts
+            total_time_spent: formDataEntry.total_time_spent || 0, // Capture total time spent
+        };
     }).filter((data): data is DummyData => data !== null); // Proper type assertion
 
-    console.log('Formatted answers for submission:', dummyDataArray);
+    console.log('Formatted answers for submission:', formattedDataArray);
 
-    const result = await saveAnswerstest(dummyDataArray);
+    const result = await saveAnswerstest(formattedDataArray);
 
     toast({
       title: "Saving answers",

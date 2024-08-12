@@ -49,12 +49,12 @@ export interface DummyData {
   created_at: string;
   question_id: number;
   prolific_id: string;
-  response_text: string;
-  response_data: string;
-  grade: number;
-  passed: boolean;
-  start_time: string;
-  end_time: string;
+  answer: string;
+  // prompts: string;
+  // test_for_prompts: string;
+  test: string,
+  unfinished_prompts: string;
+  total_time_spent: number;
 }
 
 export async function saveAnswerstest(dummyDataArray: DummyData[]) {
@@ -63,21 +63,23 @@ export async function saveAnswerstest(dummyDataArray: DummyData[]) {
 
     // Insert the dummy data into the results table
     const { data, error } = await supabase
-      .from('results')
+      .from("results")
       .insert(dummyDataArray);
 
     if (error) {
-      console.error('Error saving answers:', error);
-      return { success: false, error: error.message };
+      console.error('Error saving answers:', error.message, error.details, error.hint);
+      return { success: false, error: error.message || 'Unknown error' };
     }
 
     console.log('Data saved:', data);
     return { success: true, data };
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+  } catch (error: any) {
+    console.error('Unexpected error:', error.message || 'An unexpected error occurred');
+    return { success: false, error: error.message || 'An unexpected error occurred' };
   }
 }
+
+
 
 
 
