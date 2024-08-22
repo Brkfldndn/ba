@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FaArrowUp } from "react-icons/fa6";
 import { GoPerson, GoSearch } from "react-icons/go";
 import { GiStarShuriken } from "react-icons/gi";
-import { generateGrade, generatePromtReplacement, generateRating, generateSug, generateSuggestion2, generateSuggestions } from '../app/actions';
+import { generateGrade, generatePromtReplacement, generateRating, generateSug, generateSuggestion2, generateSuggestion3, generateSuggestions } from '../app/actions';
 import { useChat } from 'ai/react';
 import { CgDanger } from "react-icons/cg";
 import BounceLoader from "react-spinners/BounceLoader";
@@ -19,6 +19,8 @@ import {
     HoverCardContent,
     HoverCardTrigger,
   } from "@/components/ui/hover-card"
+import { FiCopy } from "react-icons/fi";
+import { toast } from './ui/use-toast';
 
 
 interface GPT_ratingv1Props {
@@ -50,6 +52,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const [promtReplacement, setPromtReplacement] = useState<string | undefined>("");
     const [suggestion, setSuggestion] = useState<string | undefined>("");
     const [suggestion2, setSuggestion2] = useState<string | undefined>("");
+    const [suggestion3, setSuggestion3] = useState<string | undefined>("");
     // evaluate whether unique suggestions is the better way do do that 
     // or call them Nudges
 
@@ -60,6 +63,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const index = searchParam.get("index")
     // const { updateFormData } = useFormStore();
     const { formData, updateFormData } = useFormStore(); // Access formData from the store
+
+    const [hoveredMessage, setHoveredMessage] = useState(null);
+
+    const copyToClipboard = (text:string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "Promt saved",
+            description: "You can now paste it into the sumbit field",
+          });
+    };
 
     // if group is treatment then retain all functionalities, else only input field with enter button
 
@@ -443,6 +456,61 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
 
 
+    // Generate suggestion3
+    useEffect(() => {
+        if (group === 'treatment' && debouncedInput && debouncedInput.split(' ').filter(word => word.length > 0).length > 3) {
+            (async () => {
+                setLloadingSuggestion(true);
+                try {
+                    const suggestion3Response = await generateSuggestion3(debouncedInput || '');
+                    const suggestion3ResponseValue = suggestion3Response?.suggestion2 ?? '';
+                    setSuggestion3(suggestion3ResponseValue); // Set the extracted value
+                    console.log('newSuggestions3:', suggestion3ResponseValue);
+
+                    // Get the current task index from search parameters
+                    const taskIndex = index ? parseInt(index, 10) : 0;
+
+                    // Access the form store
+                    const formData = useFormStore.getState().formData;
+
+                    // Capture the current data for the task index
+                    let currentData = formData[taskIndex]?.response_data || [];
+                    console.log('Current Data:', currentData);
+
+                    // Find the latest unfinished_prompt and append the suggestion2
+                    const updatedResponseData = currentData.map((item, idx) => {
+                        if (item.unfinished_prompt && idx === currentData.length - 1) {
+                            // Append the suggestion2 to the suggestions array
+                            return {
+                                ...item,
+                                unfinished_prompt: {
+                                    ...item.unfinished_prompt,
+                                    suggestions: [...(item.unfinished_prompt.suggestions || []), suggestion3ResponseValue], // Append the suggestion2
+                                },
+                            };
+                        }
+                        return item;
+                    });
+
+                    // Update the form store with the new data
+                    updateFormData(taskIndex, {
+                        ...formData[taskIndex],
+                        response_data: updatedResponseData,
+                    });
+
+                    console.log("Updated formData with new suggestion3:", useFormStore.getState().formData);
+
+                } catch (error) {
+                    console.error('Error generating suggestion3:', error);
+                } finally {
+                    setLloadingSuggestion(false);
+                }
+            })();
+        }
+    }, [debouncedInput]);   
+
+
+
 
 
 
@@ -611,26 +679,45 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         <div className="flex flex-col w-full h-full relative">
 
             <div className="flex flex-col space-y-4 overflow-scroll p-2 mb-16">
-                {messages
-                    .filter((message) => message.role !== "system")
-                    .map((message, index) => (
-                        <div
-                            key={index}
-                            className={`p-2 rounded ${message.role === "user" ? "text-right" : "text-left"}`}
-                        >
-                            <div className="flex flex-row gap-5 items-start">
-                                <div className="flex-shrink-0">
-                                    {message.role === "user" ? 
-                                        <GoPerson size={25} /> :
-                                        <GiStarShuriken color='#21d9c3' size={25} />
-                                    }
+            {messages
+                .filter((message) => message.role !== "system")
+                .map((message, index) => (
+                    <div
+                        key={index}
+                        className={`relative py-2 flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                        <div className={`relative max-w-xl ${message.role === "user" ? "bg-neutral-100" : "bg-white border border-neutral-100"}  rounded-xl `}>
+                            <div className="flex flex-col">
+                                <div className='flex gap-3 items-start p-4'>
+                                    {message.role === "user" ? (
+                                        <GoPerson size={25} className="self-start mt-1" />
+                                    ) : (
+                                        <GiStarShuriken size={25} className="self-start mt-1" color='#21d9c3' />
+                                    )}
+                                    <div className="flex-1 whitespace-pre-wrap">
+                                        {message.content}
+                                    </div>
                                 </div>
-                                <div className="flex-1 whitespace-pre-wrap">
-                                    {message.content}
+                                {message.role !== "user" && (
+                                <div className=" w-full border-t border-neutral-100 flex flex-col items-center justify-center">
+                                    <div
+                                        onClick={() => copyToClipboard(message.content)}
+                                        className="text-sm  flex flex-row gap-4 item-center transition duration-100 hover:text-neutral-400 p-3 rounded-t-xl cursor-pointer "
+                                    >
+                                        <FiCopy size={20} />
+                                        <div>Copy prompt</div>
+                                    </div>
                                 </div>
+                            )}
                             </div>
                         </div>
+                    </div>
                 ))}
+
+
+
+
+
                 <div ref={messagesEndRef} />
             </div>
             <div
@@ -666,7 +753,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                             <div className="flex justify-between space-x-4">
                                                                 <div className="space-y-1">
                                                                     <p className="text-sm">
-                                                                    There might be contextual issues with this promts, implement the promt-suggestion to improve the promt score, and you result!
+                                                                    There might be contextual issues with this promts, implement the promt-suggestion to improve the promt score, and your result!
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -687,7 +774,28 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                             <div className="flex justify-between space-x-4">
                                                                 <div className="space-y-1">
                                                                     <p className="text-sm">
-                                                                    There might be formal issues with this promts, implement the promt-suggestion to improve the promt score, and you result!
+                                                                    There might be formal issues with this promts, implement the promt-suggestion to improve the promt score, and your result!
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </HoverCardContent>
+                                                    </HoverCard>
+                                                </div>
+                                                )}
+                                                {suggestion3 && (
+                                                <div className='relative text-sm border-2 border-amber-400 text-amber-400 font-semibold rounded-xl px-2 p-1 pr-5'>
+                                                    {suggestion3}
+                                                    <HoverCard>
+                                                        <HoverCardTrigger asChild>
+                                                            <div className='absolute h-5 w-5 border-0 right-0 bottom-0 bg-amber-400 rounded-br-[10px] rounded-tl-[10px] text-neutral-100 flex flex-col items-center justify-center'>
+                                                             <CgDanger size={12} />
+                                                            </div>
+                                                        </HoverCardTrigger>
+                                                        <HoverCardContent className="w-80">
+                                                            <div className="flex justify-between space-x-4">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-sm">
+                                                                        There might not be sufficient examples to garantee the repsonse you might envision, implement the promt-suggestion to improve the promt score, and your result!
                                                                     </p>
                                                                 </div>
                                                             </div>

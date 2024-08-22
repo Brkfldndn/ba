@@ -19,6 +19,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-toast": "^1.2.1",
     "@supabase/supabase-js": "^2.43.4",
+    "@tailwindcss/typography": "^0.5.14",
     "@types/mdx": "^2.0.13",
     "ai": "^3.1.30",
     "class-variance-authority": "^0.7.0",

@@ -1,3 +1,4 @@
+
 import { fetchStudyInstruction } from "./actions";
 import Link from "next/link";
 import ReactMarkdown from 'react-markdown';
@@ -57,7 +58,7 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
         <CarouselContent className=" h-[60vh] aspect-square">
           {parts.map((part: string, index: number) => (
             <CarouselItem key={index}>
-              <div className="border-2 w-[58vh] h-full overflow-scroll rounded-3xl p-8">
+              <div className="border-2 w-[58vh] h-full overflow-scroll rounded-3xl p-8 prose">
                 <MDXRemote source={part} />
               </div>
             </CarouselItem>
