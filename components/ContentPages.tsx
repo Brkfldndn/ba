@@ -81,13 +81,13 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
       <ResizablePanel defaultSize={50}>
         <ResizablePanelGroup direction="vertical">
           <ResizablePanel defaultSize={75}>
-            <div ref={instructionRef} className="flex flex-col h-full px-6 pt-6">
+            <div ref={instructionRef} className="flex flex-col h-full px-6 pt-6 w-full">
               <div className="font-semibold w-full flex flex-row justify-between items-center">
                 <div className="text-lg">Task {taskIndex + 1}</div>
               </div>
-              <div  className="overflow-scroll h-full">
+              <div  className="overflow-scroll h-full w-full">
                 {Array.isArray(data) && data.length > 0 && (
-                  <div className='overflow-scroll h-full prose'>
+                  <div className='overflow-scroll h-full prose w-full'>
                     <Markdown>{data[taskIndex]?.instruction}</Markdown>
                   </div>
                 )}

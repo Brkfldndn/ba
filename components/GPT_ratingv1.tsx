@@ -71,7 +71,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         toast({
             title: "Promt saved",
             description: "You can now paste it into the sumbit field",
-          });
+        });
+
+        const taskIndex = index ? parseInt(index, 10) : 0;
+        // Create the object that matches the FormData structure
+        const formDataUpdate = {
+            answer: text // Assuming 'answer' is the correct key in your FormData
+        };
+
+        // Update the form store directly
+        useFormStore.getState().updateFormData(taskIndex, formDataUpdate);
     };
 
     // if group is treatment then retain all functionalities, else only input field with enter button
@@ -636,7 +645,14 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const handleButtonClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
         console.log("ist gelaufen");
         event.preventDefault();
-        await handleSubmit(event as any); // Process the input   
+        await handleSubmit(event as any); // Process the input 
+        setIsInputNotEmpty(false);
+        setGrade("0");
+        setGradeNewPromt("0");
+        setPromtReplacement("");
+        setSuggestion("");
+        setSuggestion2("");
+        setSuggestion3("");
     };
     
 
@@ -705,7 +721,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                         className="text-sm  flex flex-row gap-4 item-center transition duration-100 hover:text-neutral-400 p-3 rounded-t-xl cursor-pointer "
                                     >
                                         <FiCopy size={20} />
-                                        <div>Copy prompt</div>
+                                        <div>Select response as answer</div>
                                     </div>
                                 </div>
                             )}
