@@ -191,51 +191,54 @@ export async function generateRating(input: string) {
 export async function generateGrade(input: string) {
   'use server';
 
-  // Generate grades for different aspects of the prompt
-  const [result1, result2, result3] = await Promise.all([
-    generateObject({
-      model: openai('gpt-4-turbo'),
-      system: `Rate the promt in terms of Prompt Structure and Clarity; you can assign a score of 0 or 1, with 0 meaning the category is not sufficiently true and 1 meaning it is.
+  const categories = [
+    { number: 1, name: "No Politeness", weight: 1, prompt: "Evaluate whether the prompt avoids politeness, if so assign 1. Assign a score of 0 or 1." },
+    { number: 2, name: "Intended Audience", weight: 4, prompt: "Evaluate the prompt in terms of whether it contains informaiton about an audience that needs to be adressed, if you deem that to be necessary to receive the right response, e.g., an expert in the field. Assign a score of 0 or 1." },
+   
+    { number: 4, name: "Affirmative Directives", weight: 1, prompt: "Evaluate the prompt in terms of it uses affirmative directives providing directives are used at all, like 'do' instead of negative language. Assign a score of 0 or 1." },
 
-      `,
+    { number: 7, name: "Few-Shot Prompting", weight: 4, prompt: "Evaluate the prompt in terms of whether it provides sufficient examples or context . Not providing any is only justified if it is exactly clear what is meant like the promt: what is 1+1. Assign a score of 0 or 1." },
+    { number: 8, name: "Formatting with Instructions", weight: 1, prompt: "Evaluate the prompt in terms of whether it uses clear formatting in general, ideally starting with '###Instruction###' and followed by examples or questions. Note that in certain cases it is not possible to do that as the prompt is not sufficiently long, or the prompt is structure so that it is very clear. Assign a score of 0 or 1." },
+    { number: 9, name: "Use of Mandatory Phrases", weight: 1, prompt: "Evaluate the prompt in terms of whether it is incorporating mandatory phrases like 'Your task is' and 'You MUST'. Keep im mind that this is only nessecary if the prompt is 1 long enough and also not using the opposite, e.g. you can tell me.... Assign a score of 0 or 1." },
+    
+    { number: 12, name: "Use Leading Words", weight: 1, prompt: "Evaluate the prompt in terms of whether it is using leading words like 'think step by step', if the prompt is suffiently long and the it is even possible to take multiple steps. Sometimes it is not nessecary as it would propably not impact the response in a bad way. Assign a score of 0 or 1." },
+
+    { number: 16, name: "Assigning a Role", weight: 4, prompt: "Evaluate the prompt whether it is assigning a specific role to the model in terms of its outputting in a specific lanuguage style. Take into axxount that that might only be nessecary in certain situations, where noch specifing that would lead to a likely wrong answer . Assign a score of 0 or 1." },
+    { number: 17, name: "Use of Delimiters", weight: 1, prompt: "Evaluate the prompt whether it is using delimiters for clarity. Keep in mind that they might only be nessecary if a promt has sufficinet lenght or it would otherwise not clearly seperate thoughts. Assign a score of 0 or 1." },
+
+    { number: 20, name: "Output Primers", weight: 4, prompt: "Evaluate the prompt whether it is using output primers to begin responses. Keep im mind that they are only nessecary in certain context where it might not be self evident on which context the person whos prompting might mean. Assign a score of 0 or 1." },
+
+    { number: 25, name: "Clear Requirements", weight: 4, prompt: "Evaluate the prompt in terms of clearly stating model requirements using keywords or instructions. They only might not be nessecary when the response is self evident. Assign a score of 0 or 1." },
+  ];
+  
+  
+
+  // Perform API calls to get grades for each category
+  const results = await Promise.all(
+    categories.map(category => generateObject({
+      model: openai('gpt-4-turbo'),
+      system: category.prompt,
       prompt: input,
       schema: z.object({
         grade: z.number()
       })
-    }),
-    generateObject({
-      model: openai('gpt-4-turbo'),
-      system: `Rate the promt in terms of Specificity and Information: Is there context if it is necessary (meaning it could be misunderstood)? Are there enough examples if examples are necessary (e.g., few-shot prompting)?
-      ; you can assign a score of 0 or 1, with 0 meaning the category is not sufficiently true and 1 meaning it is.
+    }))
+  );
 
-      `,
-      prompt: input,
-      schema: z.object({
-        grade: z.number()
-      })
-    }),
-    generateObject({
-      model: openai('gpt-4-turbo'),
-      system: `Rate the promt in terms of Content and Language Style: Is the tone and style of response instructed if deemed necessary (e.g., a different output might occur if not specified)?; 
-      you can assign a score of 0 or 1, with 0 meaning the category is not sufficiently true and 1 meaning it is.
+  // Extracts and calculates the weighted sum of grades
+  const weightedSum = results.reduce((sum, result, index) => {
+    const grade = result.object.grade;
+    const weight = categories[index].weight;
+    console.log(`Category ${categories[index].number} - ${categories[index].name}: Grade = ${grade}, Weight = ${weight}`);
+    return sum + (grade * weight);
+  }, 0);
 
-      `,
-      prompt: input,
-      schema: z.object({
-        grade: z.number()
-      })
-    })
-  ]);
+  // Calculate the total weight
+  const totalWeight = categories.reduce((sum, category) => sum + category.weight, 0);
 
-  // Extract the grades
-  const grade1 = result1.object.grade;
-  const grade2 = result2.object.grade;
-  const grade3 = result3.object.grade;
-
-  // Calculate the RMS of the grades and scale to the final grade
-  const grades = [grade1, grade2, grade3].map(Number);
-  const rms = Math.sqrt(grades.reduce((sum, grade) => sum + grade ** 2, 0) / grades.length);
-  const finalGrade = Math.round(rms * 5);
+  // Normalize the weighted sum and calculate the final grade
+  const normalizedGrade = (weightedSum / totalWeight) * 5;
+  const finalGrade = Math.round(normalizedGrade);
 
   // Wrap the final grade in a zod object and return
   const grade = z.object({ grade: z.number() }).parse({ grade: finalGrade });
@@ -251,72 +254,21 @@ export async function generatePromtReplacement(input: string) {
 
   const { object: promtReplacement } = await generateObject({
     model: openai('gpt-4-turbo'),
-    system: `If the promt is engineered/written in a bad way and the promt could be improved keeping the same semantic, then generate such promt. so only output the improved promt.
-            this is a list of things that can be improved. Note the order does not determine the importance of the principle. Also only implement a priciple if you have sufficient information otherwise dont do that. 
-            This is the List: 
-            #Principle Prompt Principle for Instructions
-            1
-            If you prefer more concise answers, no need to be polite with LLM so there is no need to add phrases like
-            “please”, “if you don’t mind”, “thank you”, “I would like to”, etc., and get straight to the point.
-            2 Integrate the intended audience in the prompt, e.g., the audience is an expert in the field.
-            3 Break down complex tasks into a sequence of simpler prompts in an interactive conversation.
-            4 Employ affirmative directives such as ‘do,’ while steering clear of negative language like ‘don’t’.
-            5
-            When you need clarity or a deeper understanding of a topic, idea, or any piece of information, utilize the
-            following prompts:
-            o Explain [insert specific topic] in simple terms.
-            o Explain to me like I’m 11 years old.
-            o Explain to me as if I’m a beginner in [field].
-            o Write the [essay/text/paragraph] using simple English like you’re explaining something to a 5-year-old.
-            6 Add “I’m going to tip $xxx for a better solution!”
-            7 Implement example-driven prompting (Use few-shot prompting).
-            8
-            When formatting your prompt, start with ‘###Instruction###’, followed by either ‘###Example###’
-            or ‘###Question###’ if relevant. Subsequently, present your content. Use one or more
-            line breaks to separate instructions, examples, questions, context, and input data.
-            9 Incorporate the following phrases: “Your task is” and “You MUST”.
-            10 Incorporate the following phrases: “You will be penalized”.
-            11 Use the phrase ”Answer a question given in a natural, human-like manner” in your prompts.
-            12 Use leading words like writing “think step by step”.
-            13 Add to your prompt the following phrase “Ensure that your answer is unbiased and avoids relying on stereotypes.”
-            14
-            Allow the model to elicit precise details and requirements from you by asking you questions until he has
-            enough information to provide the needed output (for example, “From now on, I would like you to ask me
-            questions to ...”).
-            15
-            To inquire about a specific topic or idea or any information and you want to test your understanding, you can use
-            the following phrase: “Teach me any [theorem/topic/rule name] and include a test at the end, and let me know if
-            my answers are correct after I respond, without providing the answers beforehand.”
-            16 Assign a role to the large language models.
-            17 Use Delimiters.
-            18 Repeat a specific word or phrase multiple times within a prompt.
-            19 Combine Chain-of-thought (CoT) with few-Shot prompts.
-            20
-            Use output primers, which involve concluding your prompt with the beginning of the desired output. Utilize output
-            primers by ending your prompt with the start of the anticipated response.
-            21
-            To write an essay /text /paragraph /article or any type of text that should be detailed: “Write a detailed [essay/text
-            /paragraph] for me on [topic] in detail by adding all the information necessary”.
-            22
-            To correct/change specific text without changing its style: “Try to revise every paragraph sent by users. You should
-            only improve the user’s grammar and vocabulary and make sure it sounds natural. You should maintain the original
-            writing style, ensuring that a formal paragraph remains formal.”
-            23
-            When you have a complex coding prompt that may be in different files: “From now and on whenever you generate
-            code that spans more than one file, generate a [programming language ] script that can be run to automatically
-            create the specified files or make changes to existing files to insert the generated code. [your question]”.
-            24
-            When you want to initiate or continue a text using specific words, phrases, or sentences, utilize the following
-            prompt:
-            o I’m providing you with the beginning [song lyrics/story/paragraph/essay...]: [Insert lyrics/words/sentence].
-            Finish it based on the words provided. Keep the flow consistent.
-            25
-            Clearly state the requirements that the model must follow in order to produce content,
-            in the form of the keywords, regulations, hint, or instructions
-            26
-            To write any text, such as an essay or paragraph, that is intended to be similar to a provided sample, include the
-            following instructions:
-            o Use the same language based on the provided paragraph[/title/text /essay/answer].
+    system: `Your task is to improve the prompt that you received and output it as an improved prompt. This is the only thing you return. by adhering to the following principles while keeping the same semantic meaning:
+
+    No Politeness: If there is politeness such as "please," "if you don’t mind," "thank you," or "I would like to.", change that to direct an concise language like "must" "have to".
+    
+    Affirmative Directives: If there is negative language like "don't.", change that to affirmative language, such as "do," This will ensure clear and direct communication.
+    
+    Formatting with Instructions: Utilize clear formatting in the prompt. Put the promt in a template consisting og '###Instruction: this is an instruction###' '###Context/Example: this is context.###' '###Response: this is the response###'. This approach will help structure the prompt and make it easier to understand. Note that this is only necessary if the prompt is long or complex. Also seperate the parts by writing to a new line fo reach section.
+    
+    Use of Mandatory Phrases: Incorporate mandatory phrases such as "Your task is" and "You MUST" where applicable. 
+    
+    Use Leading Words: Include leading words like "think step by step" if the prompt is long and allows for multiple steps. However, avoid this if it does not contribute to a better understanding or if it does not significantly impact the response.
+    
+    Use of Delimiters: Apply delimiters for clarity, especially if the prompt is long or complex. Delimiters can help separate different sections or thoughts within the prompt. However, this is optional if the prompt is already clear and concise.
+    
+    Use of Output Primers: If there is sufficient context so that the response is somewhat forseeable, than start the response in e.g. '###Response: This is the start og the prompt.. ###'. Dont complete the full response (a few words are enough) just so that the user would grasp in with direction the response would go
     
     `,
     prompt: input,
@@ -334,7 +286,7 @@ export async function generateSuggestions(input: string) {
 
   const { object: suggestions } = await generateObject({
     model: openai('gpt-4-turbo'),
-    system: `If the promt is missing context say what context needs to be, this can also be the sentence "give an example" .`,
+    system: `Your task is to evaluate the the prompt you got in terms of its structure and clarity. `,
     prompt: input,
     schema: z.object({
       suggestions: z.string().optional()

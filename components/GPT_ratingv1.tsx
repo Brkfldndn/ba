@@ -69,8 +69,8 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const copyToClipboard = (text:string) => {
         navigator.clipboard.writeText(text);
         toast({
-            title: "Promt saved",
-            description: "You can now paste it into the sumbit field",
+            title: "Response saved",
+            description: "You can still edit it in the answer section",
         });
 
         const taskIndex = index ? parseInt(index, 10) : 0;
@@ -569,6 +569,8 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             setPromtReplacement("")
             setSuggestion("");
             setSuggestion2("");
+            setSuggestion3("");
+
         }
     };
 

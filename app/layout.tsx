@@ -15,12 +15,13 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
+  params: { id: string }
 }>) {
   return (
     <html lang="en">
       <body className={inter.className}>
         <div>
-          <Header />
+          <Header/>
         </div>
         {children}
         <Toaster />
