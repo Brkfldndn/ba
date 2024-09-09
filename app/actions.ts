@@ -503,3 +503,36 @@ export const fetchStudyInstruction3 = async (study: number) => {
   console.log('Fetched study instruction 3 data:', data);
   return data;
 };
+
+
+export async function saveCritique(critiqueData: {
+  sliderValue1: number;
+  sliderValue2: number;
+  textInput: string;
+  PROLIFIC_PID?: string;
+}) {
+  // Set default prolific_id to '1111111' if not provided
+  const prolific_id = critiqueData.PROLIFIC_PID || "1111111";
+
+  console.log("critique action ran ")
+
+  // Insert data into the 'participants' table in Supabase
+  const { data, error } = await supabase
+    .from("participants")
+    .insert([
+      {
+        prolific_id: prolific_id,
+        rating_1: critiqueData.sliderValue1,
+        rating_2: critiqueData.sliderValue2,
+        critique: critiqueData.textInput,
+      },
+    ]);
+
+  if (error) {
+    console.error("Error inserting data:", error);
+    return { success: false, error };
+  }
+
+  console.log("Data inserted successfully:", data);
+  return { success: true, data };
+}

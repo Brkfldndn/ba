@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa6";
 import Stopwatch from "@/components/StopWatch";
 import Link from "next/link";
+import { cn } from "@/lib/utils"
+import { Slider } from "@/components/ui/slider"
 
 import {
   AlertDialog,
@@ -18,6 +20,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Textarea } from "./ui/textarea";
+import { saveCritique } from "@/app/actions";
+import { toast } from "./ui/use-toast";
 
 interface StudyInstruction {
   study_id: number;
@@ -43,7 +48,7 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, updateFormData, handleS
   const previousTaskIndex = useRef<number | null>(null);
 
   // Extract existing URL parameters
-  const PROLIFIC_PID = searchParams.get("PROLIFIC_PID");
+  const PROLIFIC_PID = searchParams.get("PROLIFIC_PID") || undefined;
   const STUDY_ID = searchParams.get("STUDY_ID");
   const SESSION_ID = searchParams.get("SESSION_ID");
   const study = searchParams.get("study");
@@ -52,6 +57,13 @@ const Navbar: React.FC<NavbarProps> = ({ data, formData, updateFormData, handleS
   // Get and parse taskIndex from URL parameters
   const taskIndexParam = searchParams.get("index");
   const taskIndex = taskIndexParam ? parseInt(taskIndexParam, 10) : 0;
+
+
+  const [sliderValue1, setSliderValue1] = useState(5);
+  const [sliderValue2, setSliderValue2] = useState(5);
+  const [sliderMoved1, setSliderMoved1] = useState(false); 
+  const [sliderMoved2, setSliderMoved2] = useState(false);
+  const [textInput, setTextInput] = useState("");
 
 
 
@@ -141,6 +153,53 @@ useEffect(() => {
     );
   };
 
+
+  const handleCritique = async () => {
+    const critiqueData = {
+      sliderValue1,
+      sliderValue2,
+      textInput,
+      PROLIFIC_PID,
+    };
+
+    const response = await saveCritique(critiqueData);
+
+    if (response.success) {
+      // alert("Form submitted successfully!");
+    } else {
+      toast({
+        title: "Error saving critique",
+        variant: "destructive",
+        description: `Error: ${response.error}`
+      });
+    }
+  };
+
+
+
+  const handleFormSubmission = () => {
+    // Dynamically check if all conditions are met
+    const isFormValid = sliderMoved1 && sliderMoved2 && textInput.trim().length > 0;
+  
+    if (isFormValid) {
+      if (group === "treatment") {
+        handleCritique();
+      }
+      handleSubmit();
+    } else {
+      toast({
+        title: "Error",
+        description: "You need to fill out the form completely before submitting.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const markSliderMoved = (setSliderMoved: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setSliderMoved(true); // Mark slider as moved on click as well as value change
+  };
+  
+
   return (
     <div className="mb-3 relative flex flex-row justify-between items-center">
       <Button
@@ -189,22 +248,94 @@ useEffect(() => {
               <div>Submit</div>
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="">
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                By submitting you cannot change answers. Make sure to answer
-                all the questions.
+            <AlertDialogTitle>{group === "treatment" ? "Please Help Us Improve the Tool!" : "Are you sure?"}</AlertDialogTitle>
+              <AlertDialogDescription className="">
+                {group === "treatment" ? (
+                  <div className="flex flex-col gap-4">
+                    {/* <div>Please Help Us Improve the Tool!</div> */}
+
+                    <div className="flex flex-col gap-2 border-b pb-2">
+                      <label className="font-medium">Did you like working with the tool?(ChatGPT-extension)</label>
+                      <div className="px-7">
+                      <div className="flex justify-between text-sm px-2 pb-4">
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                        <span>5</span>
+                      </div>
+                        <Slider
+                        defaultValue={[2]}
+                        max={4}
+                        step={1}
+                        onValueChange={([value]) => {
+                          setSliderValue1(value);
+                          setSliderMoved1(true); // Mark slider as moved when interacted with
+                        }}
+                        onClick={() => markSliderMoved(setSliderMoved1)}
+                        className={`transition-opacity duration-300 ${sliderMoved1 ? "opacity-100" : "opacity-50"}`} 
+                      />
+                      
+                      </div>
+                      
+                      
+                      <div className="flex justify-between text-xs px-1">
+                        <div>Does not apply at all</div>
+                        <div>Fully applies</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 border-b pb-2">
+                      <label className="font-medium">Do you feel like you could improve the quality of you work when having access to the tool ?</label>
+                      <div className="px-7">
+                        <div className="flex justify-between text-sm px-2 pb-4">
+                          <span>1</span>
+                          <span>2</span>
+                          <span>3</span>
+                          <span>4</span>
+                          <span>5</span>
+                        </div>
+                        <Slider
+                        defaultValue={[2]}
+                        max={4}
+                        step={1}
+                        onValueChange={([value]) => {
+                          setSliderValue2(value);
+                          setSliderMoved2(true); // Mark slider as moved when interacted with
+                        }}
+                        onClick={() => markSliderMoved(setSliderMoved2)}
+                        className={`transition-opacity duration-300  ${sliderMoved2 ? "opacity-100" : "opacity-50"}`} 
+                      />
+                      </div>
+                      
+                      <div className="flex justify-between text-xs px-1">
+                        <div>Does not apply at all</div>
+                        <div>Fully applies</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 pt-5">
+                      <label className="font-semibold">How was your overall experience with the tool? What could we improve?</label>
+                      <Textarea
+                        className="min-h-[30px] max-h-18 h-16 resize-none border p-2 rounded"
+                        placeholder="Please share your thoughts..."
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    By submitting you cannot change answers. Make sure to answer all the questions.
+                  </div>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
-                updateTimeSpent();
-                handleSubmit();
-              }}>
-                Submit
-              </AlertDialogAction>
+              <AlertDialogAction onClick={handleFormSubmission}>Submit</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
