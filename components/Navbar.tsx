@@ -178,21 +178,25 @@ useEffect(() => {
 
 
   const handleFormSubmission = () => {
-    // Dynamically check if all conditions are met
-    const isFormValid = sliderMoved1 && sliderMoved2 && textInput.trim().length > 0;
+    if (group === "treatment") {
+      // Dynamically check if all conditions are met for treatment group
+      const isFormValid = sliderMoved1 && sliderMoved2 && textInput.trim().length > 0;
   
-    if (isFormValid) {
-      if (group === "treatment") {
+      if (isFormValid) {
         handleCritique();
+        handleSubmit();
+      } else {
+        toast({
+          title: "Error",
+          description: "You need to fill out the form completely before submitting, if you dont want to move the slider, click to confirm its position",
+          variant: "destructive",
+        });
       }
-      handleSubmit();
     } else {
-      toast({
-        title: "Error",
-        description: "You need to fill out the form completely before submitting.",
-        variant: "destructive",
-      });
+      // If group is not "treatment", just handle submit directly
+      handleSubmit();
     }
+  
   };
 
   const markSliderMoved = (setSliderMoved: React.Dispatch<React.SetStateAction<boolean>>) => {
