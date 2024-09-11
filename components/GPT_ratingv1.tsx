@@ -758,7 +758,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                 {loadingSuggestion ? <PuffLoader  color="#000000" loading={loadingPromtNewGrade || loadingPromt} size={30} /> : <CgDanger size={22} className='ml-1' />}
                                             </div>
                                             <div className='flex flex-row gap-4 mr-36'>
-                                                {suggestion && (
+                                                {suggestion && suggestion !== '-' && (
                                                 <div className='relative text-sm border-2 border-cyan-400 text-cyan-400 font-semibold rounded-xl px-2 p-1 pr-5'>
                                                     {suggestion}
                                                     <HoverCard>
@@ -779,30 +779,9 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                     </HoverCard>
                                                 </div>
                                                 )}
-                                                {suggestion2 && (
-                                                <div className='relative text-sm border-2 border-violet-400 text-violet-400 font-semibold rounded-xl px-2 p-1 pr-5'>
-                                                    {suggestion2}
-                                                    <HoverCard>
-                                                        <HoverCardTrigger asChild>
-                                                            <div className='absolute h-5 w-5 border-0 right-0 bottom-0 bg-violet-400 rounded-br-[10px] rounded-tl-[10px] text-neutral-100 flex flex-col items-center justify-center'>
-                                                             <CgDanger size={12} />
-                                                            </div>
-                                                        </HoverCardTrigger>
-                                                        <HoverCardContent className="w-80">
-                                                            <div className="flex justify-between space-x-4">
-                                                                <div className="space-y-1">
-                                                                    <p className="text-sm">
-                                                                    There might be formal issues with this promts, implement the promt-suggestion to improve the promt score, and your result!
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </HoverCardContent>
-                                                    </HoverCard>
-                                                </div>
-                                                )}
-                                                {suggestion3 && (
+                                                {suggestion2 && suggestion2 !== '-' && (
                                                 <div className='relative text-sm border-2 border-amber-400 text-amber-400 font-semibold rounded-xl px-2 p-1 pr-5'>
-                                                    {suggestion3}
+                                                    {suggestion2}
                                                     <HoverCard>
                                                         <HoverCardTrigger asChild>
                                                             <div className='absolute h-5 w-5 border-0 right-0 bottom-0 bg-amber-400 rounded-br-[10px] rounded-tl-[10px] text-neutral-100 flex flex-col items-center justify-center'>
@@ -814,6 +793,27 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                                                 <div className="space-y-1">
                                                                     <p className="text-sm">
                                                                         There might not be sufficient examples to garantee the repsonse you might envision, implement the promt-suggestion to improve the promt score, and your result!
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </HoverCardContent>
+                                                    </HoverCard>
+                                                </div>
+                                                )}
+                                                {suggestion3 && suggestion3 !== '-' && (
+                                                <div className='relative text-sm border-2 border-violet-400 text-violet-400 font-semibold rounded-xl px-2 p-1 pr-5'>
+                                                    {suggestion3}
+                                                    <HoverCard>
+                                                        <HoverCardTrigger asChild>
+                                                            <div className='absolute h-5 w-5 border-0 right-0 bottom-0 bg-violet-400 rounded-br-[10px] rounded-tl-[10px] text-neutral-100 flex flex-col items-center justify-center'>
+                                                             <CgDanger size={12} />
+                                                            </div>
+                                                        </HoverCardTrigger>
+                                                        <HoverCardContent className="w-80">
+                                                            <div className="flex justify-between space-x-4">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-sm">
+                                                                    There might be formal issues with this promts, implement the promt-suggestion to improve the promt score, and your result!
                                                                     </p>
                                                                 </div>
                                                             </div>

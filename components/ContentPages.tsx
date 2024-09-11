@@ -87,8 +87,16 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
               </div>
               <div  className="overflow-scroll h-full w-full">
                 {Array.isArray(data) && data.length > 0 && (
-                  <div className='overflow-scroll h-full prose w-full'>
-                    <Markdown>{data[taskIndex]?.instruction}</Markdown>
+                  <div className='overflow-scroll h-full prose max-w-none pb-24'>
+                    <Markdown
+                      components={{
+                        img: ({ ...props }) => (
+                          <img {...props} className="max-w-[50vw] w-full h-auto mx-auto" />
+                        ),
+                      }}
+                    >
+                      {data[taskIndex]?.instruction}
+                    </Markdown>
                   </div>
                 )}
               </div>

@@ -253,7 +253,7 @@ export async function generatePromtReplacement(input: string) {
   'use server';
 
   const { object: promtReplacement } = await generateObject({
-    model: openai('gpt-4-turbo'),
+    model: openai('gpt-4o'),
     system: `Your task is to improve the prompt that you received and output it as an improved prompt. This is the only thing you return. by adhering to the following principles while keeping the same semantic meaning:
 
     No Politeness: If there is politeness such as "please," "if you don’t mind," "thank you," or "I would like to.", change that to direct an concise language like "must" "have to".
@@ -286,7 +286,8 @@ export async function generateSuggestions(input: string) {
 
   const { object: suggestions } = await generateObject({
     model: openai('gpt-4-turbo'),
-    system: `Your task is to evaluate the the prompt you got in terms of its structure and clarity. `,
+    maxTokens: 30,
+    system: `Your task is to assess the prompt for structure and clarity. If the prompt is well-structured or simple enough that poor structure would not lead to a bad response, output only "-". If the prompt has structural problems that might affect the response, point out the specific issue briefly and clearly. Do not respond to the content of the prompt itself, and keep all feedback concise. Avoid providing unnecessary explanations. Also just respond with "-", if there are problems with the context or language, you are only here to evaluate the clarity of the structure. When identifying issues, reduce feedback to its absolute minimum while retaining meaning. For example, instead of full explanations like "The prompt has structural problems and is unclear. It lacks necessary punctuation and has a typo in 'competitor lanscap'," write "Structural problems, unclear: lacks punctuation, typo 'lanscap'."`,
     prompt: input,
     schema: z.object({
       suggestions: z.string().optional()
@@ -303,8 +304,9 @@ export async function generateSuggestion2(input: string) {
   'use server';
 
   const { object: suggestion2 } = await generateObject({
-    model: openai('gpt-4-turbo'),
-    system: `If the promt is missing the format it should be outputed as return "which format", if it is unclear as to which format is meant output a short question concerning the output to clarify it. these are the only topics on which you output anything .`,
+    model: openai('gpt-4o'),
+    maxTokens: 30,
+    system: `Your task is to assess the context and examples provided in the prompt. If the context and examples are clear, relevant, and sufficient for a proper response, output only "-". If the context or examples are missing, unclear, or insufficient to inform a good response, briefly point out the specific issue. Do not provide unnecessary details or explanations. Ensure you only focus on the adequacy of the context and examples, not the prompt structure or language. When identifying issues, reduce feedback to its absolute minimum while retaining meaning. For example, instead of full explanations like "The context is unclear and lacks sufficient examples to inform a good response," write "Context is unclear, insufficient examples."`,
     prompt: input,
     schema: z.object({
       suggestion2: z.string().optional()
@@ -319,8 +321,9 @@ export async function generateSuggestion3(input: string) {
   'use server';
 
   const { object: suggestion2 } = await generateObject({
-    model: openai('gpt-4-turbo'),
-    system: `If the promt is missing nessecary examples it should be outputed as return "name an expample". These are the only topics on which you output anything .`,
+    model: openai('gpt-4o'),
+    maxTokens: 30,
+    system: `Your task is to assess the tone and style of the prompt. If the tone or style is irrelevant to the quality of the AI's response (e.g., simple factual prompts like "What is 1 plus 1?"), output only "-". If the tone or style could affect the AI's response, and is not specified, briefly state that it is not specified. When identifying issues, reduce feedback to its absolute minimum while retaining meaning. For example, instead of "The tone or style is not specified and may affect the response," write "Tone/style not specified."`,
     prompt: input,
     schema: z.object({
       suggestion2: z.string().optional()
@@ -342,8 +345,8 @@ export async function generateDirection(input: string) {
   'use server';
 
   const { object: suggestions } = await generateObject({
-    model: openai('gpt-4-turbo'),
-    system: `If and only if the promt is missing context in terms of the direction where the pomt should, then output something along the lines of "more context" etc. or as a question that nudges the promter to the missing direction of the promt  `,
+    model: openai('gpt-4o'),
+    system: `If and only if the promt is missing context in terms of the direction where the pompt should, then output something along the lines of "more context" etc. or as a question that nudges the promter to the missing direction of the promt  `,
     prompt: input,
     schema: z.object({
       promtDirection: z.string().optional()
