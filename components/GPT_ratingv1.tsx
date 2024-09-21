@@ -29,7 +29,7 @@ interface GPT_ratingv1Props {
 
 const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
-    const { messages, input: chatInput, handleInputChange, handleSubmit } = useChat({
+    const { messages, setMessages, input: chatInput, handleInputChange, handleSubmit } = useChat({
         onFinish: (message) => {
             pushtoFormStore(message);
         }
@@ -94,6 +94,20 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
             clearTimeout(handler);
         };
     }, [input]);
+
+    useEffect(() => {
+        console.log("messagaarray",messages )
+        if (messages.length > 2) {
+            const latestUserMessage = messages.filter((message) => message.role === "user").pop();
+            const latestSystemMessage = messages.filter((message) => message.role === "assistant").pop();
+
+            const latestMessages = [];
+            if (latestUserMessage) latestMessages.push(latestUserMessage);
+            if (latestSystemMessage) latestMessages.push(latestSystemMessage);
+
+            setMessages(latestMessages);
+        }
+    }, [messages, setMessages]);
 
 
     useEffect(() => {
@@ -585,7 +599,17 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     };
 
     const handlePromtReplacementClick = () => {
-        setInput(promtReplacement || '');
+        const newValue = promtReplacement || '';
+    
+        // Update the input state
+        setInput(newValue);
+        
+        // Sync the new value with useChat's input handling
+        handleInputChange({
+            target: {
+                value: newValue,
+            },
+        } as React.ChangeEvent<HTMLTextAreaElement>);
         setIsInputNotEmpty((promtReplacement || '').trim().length > 0);
         setPromtReplacement(""); 
         autoResizeTextarea();
@@ -690,7 +714,16 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     
         return `#${gradeColors[grade] || "000000"}`; // Default to black if grade is not in the range
     };
-    
+
+    const latestUserMessage = messages.filter((message) => message.role === "user").pop();
+    const latestSystemMessage = messages.filter((message) => message.role === "system").pop();
+
+    const latestMessages = [];
+
+    if (latestUserMessage) latestMessages.push(latestUserMessage);
+    if (latestSystemMessage) latestMessages.push(latestSystemMessage);
+
+    console.log("latest Message", latestMessages);
     
 
     return (

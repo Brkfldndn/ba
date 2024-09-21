@@ -70,6 +70,17 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
 
   console.log('Current Task Index:', taskIndex);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Prevent typing
+    e.preventDefault();
+    
+    // Display the toast notification
+    toast({
+      title: "Editing Disabled",
+      description: "Select a response from Chat-gpt as you response.",
+    });
+  };
+
   return (
     <ResizablePanelGroup direction="horizontal" className="w-full rounded-lg border">
       <ResizablePanel defaultSize={50} className="relative">
@@ -106,15 +117,17 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
           <ResizablePanel defaultSize={25}>
             <div className="flex flex-col h-full p-6">
               <div className="font-semibold w-full flex flex-row justify-between items-center">
-                <div>Answer</div>
+                <div>Selected Response</div>
                 <Stopwatch />
               </div>
               <div className="pt-2 h-full flex flex-col">
                 <Textarea
                   className="h-full min-h-[100px] resize-none border p-2 rounded"
                   placeholder="Type your answer here."
+                  readOnly={true}
                   value={answers[taskIndex]?.answer || ""}
                   onChange={(e) => handleAnswerChange(taskIndex, e.target.value)}
+                  onKeyDown={handleKeyDown}
                 />
               </div>
             </div>
