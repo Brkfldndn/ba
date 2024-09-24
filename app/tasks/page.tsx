@@ -26,7 +26,7 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string  |
   }
 
   return (
-    <div className="p-4" style={{ height: 'calc(100vh - 189px)' }}>
+    <div className="p- h-full" style={{ height: 'calc(100vh - 110px)' }}>
 
       <StudyWrapper data={data} questions={data} group={group}/>
     </div>

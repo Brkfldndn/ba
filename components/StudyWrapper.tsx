@@ -148,7 +148,7 @@ const StudyWrapper: React.FC<StudyWrapperProps> = ({ data, questions, group }) =
 
 
   return (
-    <div className="p-4" style={{ height: 'calc(100vh - 189px)' }}>
+    <div className="p-4 " style={{ height: 'calc(100vh - 110px)' }}>
       <Navbar data={data} formData={formData} handleSubmit={handleSubmit} updateFormData={updateFormData}/>
       <ContentPages data={data} answers={formData} handleAnswerChange={handleAnswerChange} group={group}/>
     </div>

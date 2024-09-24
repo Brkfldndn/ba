@@ -86,7 +86,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         navigator.clipboard.writeText(text);
         toast({
             title: "Response saved",
-            description: "You can still edit it in the answer section",
+            description: "Confirm the selection to move on",
         });
 
         const taskIndex = index ? parseInt(index, 10) : 0;

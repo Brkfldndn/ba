@@ -117,7 +117,9 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
           <ResizablePanel defaultSize={25}>
             <div className="flex flex-col h-full p-6">
               <div className="font-semibold w-full flex flex-row justify-between items-center">
+                {/* render "next step if there is something in the textarea with "haken from react icons and breen background add a onlick funciton */}
                 <div>Selected Response</div>
+                
                 <Stopwatch />
               </div>
               <div className="pt-2 h-full flex flex-col">
