@@ -21,11 +21,19 @@ import {
   } from "@/components/ui/hover-card"
 import { FiCopy } from "react-icons/fi";
 import { toast } from './ui/use-toast';
+import Markdown from 'react-markdown';
 
 
 interface GPT_ratingv1Props {
     group: string | undefined;
 }
+
+interface Message {
+    id: any;          // Allow any type for the id
+    role: any;        // Allow any type for the role (instead of 'user' | 'assistant' | 'system')
+    content: any;     // Allow any type for content
+}
+
 
 const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
@@ -40,6 +48,14 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     const [isInputNotEmpty, setIsInputNotEmpty] = useState(false);
     const [debouncedInput, setDebouncedInput] = useState('');
     // const [messages, setMessages] = useState<string[]>([])
+    // const [frontendMessages, setFrontendMessages] = useState([]);
+    // State variables for latest messages
+    const [latestUserMessage2, setLatestUserMessage] = useState<Message | null>(null);
+    const [latestAssistantMessage, setLatestAssistantMessage] = useState<Message | null>(null);
+
+    // Ref to keep track of previous messages
+    const previousMessagesRef = useRef<Message[]>([]);
+    
 
     const [loadingPromt, setLoadingPromt] = useState(false);
     const [loadingPromtNewGrade, setLoadingPromtNewGrade] = useState(false);
@@ -96,18 +112,72 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
     }, [input]);
 
     useEffect(() => {
-        console.log("messagaarray",messages )
-        if (messages.length > 2) {
-            const latestUserMessage = messages.filter((message) => message.role === "user").pop();
-            const latestSystemMessage = messages.filter((message) => message.role === "assistant").pop();
-
-            const latestMessages = [];
-            if (latestUserMessage) latestMessages.push(latestUserMessage);
-            if (latestSystemMessage) latestMessages.push(latestSystemMessage);
-
-            setMessages(latestMessages);
+        const previousMessages = previousMessagesRef.current as any[];
+        const currentMessages = messages as any[];
+        
+        // Detect new messages by comparing current and previous messages
+        const newMessages = currentMessages.filter(
+            (msg: any) => !previousMessages.some((prevMsg: any) => prevMsg.id === msg.id)
+        );
+        
+        // Store timer IDs
+        const timers: Array<ReturnType<typeof setTimeout>> = [];
+        
+        // Handle new messages
+        if (newMessages.length > 0) {
+            // Handle new user messages
+            const newUserMessage = newMessages
+            .filter((message: any) => message.role === 'user')
+            .pop();
+            if (newUserMessage) {
+            setLatestUserMessage(newUserMessage);
+        
+            // Set a timeout to remove the message from messages array after one second
+            const userTimerId = setTimeout(() => {
+                // @ts-ignore
+                setMessages((prevMessages: any) =>
+                prevMessages.filter((msg: any) => msg !== newUserMessage)
+                );
+            }, 1000);
+        
+            // Cleanup function to clear the timeout if necessary
+            return () => {
+                clearTimeout(userTimerId);
+            };
+            }
+        
+            // Handle new assistant messages
+            const newAssistantMessage = newMessages
+            .filter((message: any) => message.role === 'assistant')
+            .pop();
+            if (newAssistantMessage) {
+            setLatestAssistantMessage(newAssistantMessage);
+        
+            // Set a timeout to remove the message from messages array after one second
+            const assistantTimerId = setTimeout(() => {
+                // @ts-ignore
+                setMessages((prevMessages: any) =>
+                prevMessages.filter((msg: any) => msg !== newAssistantMessage)
+                );
+            }, 1000);
+        
+            // Cleanup function to clear the timeout if necessary
+            return () => {
+                clearTimeout(assistantTimerId);
+            };
+            }
         }
+    
+    // Update previousMessagesRef for the next comparison
+    previousMessagesRef.current = currentMessages;
     }, [messages, setMessages]);
+        
+    // Construct frontendMessages by combining the latest messages
+    const frontendMessages: any[] = [];
+    if (latestUserMessage2) frontendMessages.push(latestUserMessage2);
+    if (latestAssistantMessage) frontendMessages.push(latestAssistantMessage);
+        
+    
 
 
     useEffect(() => {
@@ -730,7 +800,7 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
         <div className="flex flex-col w-full h-full relative">
 
             <div className="flex flex-col space-y-4 overflow-scroll p-2 mb-16">
-            {messages
+            {frontendMessages
                 .filter((message) => message.role !== "system")
                 .map((message, index) => (
                     <div
@@ -745,8 +815,17 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
                                     ) : (
                                         <GiStarShuriken size={25} className="self-start mt-1" color='#21d9c3' />
                                     )}
-                                    <div className="flex-1 whitespace-pre-wrap">
-                                        {message.content}
+                                    <div className="flex-1 whitespace-pre-wrap prose gap-0">
+                                    <Markdown
+                                                components={{
+                                                    img: ({ ...props }) => (
+                                                    <img {...props} className="max-w-[50vw] w-full h-auto mx-auto " />
+                                                    ),
+                                                }}
+                                                >
+                                                {message.content}
+                                                </Markdown>
+                                        {/* {message.content} */}
                                     </div>
                                 </div>
                                 {message.role !== "user" && (
@@ -880,9 +959,24 @@ const GPT_ratingv1: React.FC<GPT_ratingv1Props> = ({ group }) => {
 
                                                 </div>
                                             </div>
-                                            <div className={`flex-grow max-h-[150px] overflow-y-auto ${loadingPromt ? 'flex flex-col items-center justify-center' : ''}`}>
-                                                {loadingPromt ? <PropagateLoader color="#000000" loading={loadingPromt} size={10} /> : promtReplacement}
+                                            <div className={`flex-grow max-h-[150px] overflow-y-auto prose ${loadingPromt ? 'flex flex-col items-center justify-center' : ''}`}>
+                                                {loadingPromt ? (
+                                                    <PropagateLoader color="#000000" loading={loadingPromt} size={10} />
+                                                ) : promtReplacement ? (
+                                                    <Markdown
+                                                    components={{
+                                                        img: ({ ...props }) => (
+                                                        <img {...props} className="max-w-[50vw] w-full h-auto mx-auto " />
+                                                        ),
+                                                    }}
+                                                    >
+                                                    {promtReplacement}
+                                                    </Markdown>
+                                                ) : (
+                                                    <div>No content available</div> // Render something if promtReplacement is empty or invalid
+                                                )}
                                             </div>
+
 
                                             {(loadingPromt || promtReplacement) && (
                                                 <div className='flex flex-col items-center justify-center gap-3 text-xs text-neutral-400 min-w-10'>

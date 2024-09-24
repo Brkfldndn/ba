@@ -254,13 +254,24 @@ export async function generatePromtReplacement(input: string) {
 
   const { object: promtReplacement } = await generateObject({
     model: openai('gpt-4o'),
-    system: `Your task is to improve the prompt that you received and output it as an improved prompt. This is the only thing you return. by adhering to the following principles while keeping the same semantic meaning:
+    system: `
+    Your task is to improve the prompt that you received and output it as an improved prompt. This is the only thing you return. by adhering to the following principles while keeping the same semantic meaning:
 
     No Politeness: If there is politeness such as "please," "if you don’t mind," "thank you," or "I would like to.", change that to direct an concise language like "must" "have to".
     
     Affirmative Directives: If there is negative language like "don't.", change that to affirmative language, such as "do," This will ensure clear and direct communication.
     
-    Formatting with Instructions: Utilize clear formatting in the prompt. Put the promt in a template consisting og '###Instruction: this is an instruction###' '###Context/Example: this is context.###' '###Response: this is the response###'. This approach will help structure the prompt and make it easier to understand. Note that this is only necessary if the prompt is long or complex. Also seperate the parts by writing to a new line fo reach section.
+    Formatting with Instructions: Utilize clear formatting in the prompt wiht markdown syntax. Put the prompt in a template consisting of 
+    '### Instruction:  
+    this is an instruction
+
+    ### Context/Example:  
+    this is context 
+    
+    ### Response:  
+    this is the response...'.
+    
+    This approach will help structure the prompt and make it easier to understand. Note that this is only necessary if the prompt is long or complex. Also seperate the parts by writing to a new line fo reach section.
     
     Use of Mandatory Phrases: Incorporate mandatory phrases such as "Your task is" and "You MUST" where applicable. 
     
@@ -268,7 +279,9 @@ export async function generatePromtReplacement(input: string) {
     
     Use of Delimiters: Apply delimiters for clarity, especially if the prompt is long or complex. Delimiters can help separate different sections or thoughts within the prompt. However, this is optional if the prompt is already clear and concise.
     
-    Use of Output Primers: If there is sufficient context so that the response is somewhat forseeable, than start the response in e.g. '###Response: This is the start og the prompt.. ###'. Dont complete the full response (a few words are enough) just so that the user would grasp in with direction the response would go
+    Use of Output Primers: If there is sufficient context so that the response is somewhat forseeable, than start the response in e.g. '### Response:  This is the start og the prompt..'. Dont complete the full response (a few words are enough) just so that the user would grasp in with direction the response would go
+
+    formulate your response in markdown syntax; especially for formatting with instructions use bold Instructions and new lines to make the strcuture better 
     
     `,
     prompt: input,
