@@ -63,8 +63,8 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
               </div>
             </CarouselItem>
           ))}
-          <CarouselItem className="">
-            <div className="border-2 w-[58vh] h-full overflow-scroll rounded-3xl p-8 flex flex-col items-center justify-center">
+          <CarouselItem className="w-[50vw] flex flex-col items-center justify-center">
+            <div className="border-2 w-full h-full overflow-scroll rounded-3xl p-8 flex flex-col items-center justify-center">
               <Link 
                 href={`/tasks?PROLIFIC_PID=${PROLIFIC_PID}&STUDY_ID=${STUDY_ID}&SESSION_ID=${SESSION_ID}&study=${study}&index=0&group=${group}`} 
                 className="cursor-pointer text-3xl font-bold p-5 py-4 border bg-[#B10034] hover:scale-110 transition duration-500 rounded-full text-white hover:text-[#B10034] hover:bg-white hover:border-spacing-6 border-hidden border-neutral-300"
