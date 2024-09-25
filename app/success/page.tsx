@@ -22,7 +22,7 @@ const SuccessPage = () => {
         <div className='text-3xl font-bold'>
             Congratulations, you completed the study!
         </div>
-        <Link href={`https://app.prolific.com/submissions/complete?cc=C18TDBPU`} className="cursor-pointer text-4xl font-bold p-5 py-4 border bg-[#B10034] hover:scale-110 transition duration-500 rounded-full text-white hover:text-[#B10034] hover:bg-white hover:border-spacing-6 border-hidden border-neutral-300">
+        <Link href={`https://app.prolific.com/submissions/complete?cc=CMK29LP0`} className="cursor-pointer text-4xl font-bold p-5 py-4 border bg-[#B10034] hover:scale-110 transition duration-500 rounded-full text-white hover:text-[#B10034] hover:bg-white hover:border-spacing-6 border-hidden border-neutral-300">
             Claim your reward on Prolific
         </Link>
       </div>
