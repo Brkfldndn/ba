@@ -269,7 +269,7 @@ export async function generatePromtReplacement(input: string) {
     this is context 
     
     ### Response:  
-    this is the response...'.
+    ...'.
     
     This approach will help structure the prompt and make it easier to understand. Note that this is only necessary if the prompt is long or complex. Also seperate the parts by writing to a new line fo reach section.
     
@@ -279,7 +279,7 @@ export async function generatePromtReplacement(input: string) {
     
     Use of Delimiters: Apply delimiters for clarity, especially if the prompt is long or complex. Delimiters can help separate different sections or thoughts within the prompt. However, this is optional if the prompt is already clear and concise.
     
-    Use of Output Primers: If there is sufficient context so that the response is somewhat forseeable, than start the response in e.g. '### Response:  This is the start og the prompt..'. Dont complete the full response (a few words are enough) just so that the user would grasp in with direction the response would go
+    
 
     formulate your response in markdown syntax; especially for formatting with instructions use bold Instructions and new lines to make the strcuture better 
     
