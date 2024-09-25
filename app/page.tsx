@@ -49,16 +49,16 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
 
 
   return (
-    <div className="w-full flex flex-col items-center justify-center" style={{ height: 'calc(100vh - 89px)' }}>
+    <div className="w-full flex flex-col items-center justify-center " style={{ height: 'calc(100vh - 89px)' }}>
       <div className="text-4xl font-bold justify-center pb-8">
         {studie.titel}
       </div>
-      
-      <Carousel className="">
-        <CarouselContent className=" h-[60vh] aspect-square">
+      <div className="h-[70vh] w-[50vw]">
+        <Carousel className=" w-full h-full flex flex-col items-center justify-center">
+        <CarouselContent className="h-full w-full aspect-square gap-0">
           {parts.map((part: string, index: number) => (
-            <CarouselItem key={index}>
-              <div className="border-2 w-[58vh] h-full overflow-scroll rounded-3xl p-8 prose">
+            <CarouselItem key={index} className="w-[50vw] flex flex-col items-center justify-center">
+              <div className="border-2 h-full overflow-scroll rounded-3xl p-8 prose w-full">
                 <MDXRemote source={part} />
               </div>
             </CarouselItem>
@@ -79,6 +79,9 @@ const Home = async ({ searchParams }: { searchParams: { [key: string]: string | 
           <div className="h-6 w-5 bg-black">-</div>
         </CarouselNext>
       </Carousel>
+      </div>
+      
+      
     </div>
   );
 }

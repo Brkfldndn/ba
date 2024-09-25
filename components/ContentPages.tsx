@@ -77,7 +77,7 @@ const ContentPages: React.FC<ContentPagesProps> = ({ data, answers, handleAnswer
     // Display the toast notification
     toast({
       title: "Editing Disabled",
-      description: "Select a response from Chat-gpt as you response.",
+      description: "Select a response from Chat-gpt as your response.",
     });
   };
 
