@@ -47,7 +47,7 @@ To recreate the database schema used in this project, follow the steps below:
 
     Below is the visual representation of the database schema for this project:
 
-    ![Supabase Schema](ba/public/supabase-schema.png)
+    ![Supabase Schema](public/supabase-schema.png)
 
 #### 3. Verify the Schema
 
